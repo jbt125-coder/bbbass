@@ -33,12 +33,12 @@
         box-shadow: 0 0 18px var(--purple), 0 0 40px #6d28d9;
     }
     .cog-btn {
-        display: none; background: #1a1a2e; border: 2px solid var(--purple);
+        visibility: hidden; background: #1a1a2e; border: 2px solid var(--purple);
         color: var(--purple); border-radius: 8px; width: 40px; height: 40px;
-        font-size: 18px; cursor: pointer; align-items: center; justify-content: center;
+        font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
         transition: background 0.2s;
     }
-    .cog-btn.visible { display: flex; }
+    .cog-btn.visible { visibility: visible; }
     .cog-btn:active { background: var(--purple); color: white; }
 
     /* ── SLIDERS ── */
@@ -215,12 +215,12 @@
 
     /* ── DISCO BALL BUTTON ── */
     .disco-btn {
-        display: none; background: #1a1a2e; border: 2px solid #a78bfa;
+        visibility: hidden; background: #1a1a2e; border: 2px solid #a78bfa;
         border-radius: 8px; width: 40px; height: 40px; font-size: 20px;
-        cursor: pointer; align-items: center; justify-content: center;
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
         transition: background 0.2s, box-shadow 0.2s;
     }
-    .disco-btn.visible { display: flex; }
+    .disco-btn.visible { visibility: visible; }
     .disco-btn:active  { background: #a78bfa; box-shadow: 0 0 20px #a78bfa; }
     .disco-btn.dancing { animation: disco-pulse 0.5s infinite alternate; }
     @keyframes disco-pulse {
@@ -384,10 +384,8 @@
         <input type="range" class="vert" id="v_vol" min="0" max="1.5" step="0.1" value="0.8">
     </div>
     <div class="slider-box">
-        <span class="slider-label-top">HIGH</span>
         <label>PITCH</label>
-        <input type="range" class="vert" id="v_pitch" min="-24" max="0" step="1" value="-12" style="transform:scaleY(-1)">
-        <span class="slider-label-bot">DEEP</span>
+        <input type="range" class="vert" id="v_pitch" min="0" max="36" step="1" value="18">
     </div>
     <div class="slider-box">
         <label>ECHO</label>
@@ -565,7 +563,8 @@ let isInitialized = false;
 let micEnabled    = true;
 
 function getPitchSemitones() {
-    return parseFloat(document.getElementById('v_pitch').value) + 12;
+    // slider 0=bottom=deep, 36=top=high → semitones -18..+18
+    return parseFloat(document.getElementById('v_pitch').value) - 18;
 }
 
 async function initAudio() {
@@ -884,6 +883,8 @@ function openEditor(ch) {
 function closeEditor() {
     document.getElementById('editorModal').classList.remove('open');
     if (previewAudio) { previewAudio.pause(); previewAudio = null; }
+    stopLivePreview();
+    livePreviewAudio = null;
 }
 
 async function drawWaveform(ch) {
@@ -987,7 +988,7 @@ window.addEventListener('touchmove', e => {
     const pct = getEditorX(e);
     if (dragging === 'left')  trimLeftPct  = Math.min(pct, trimRightPct - 0.02);
     if (dragging === 'right') trimRightPct = Math.max(pct, trimLeftPct  + 0.02);
-    updateTrimUI();
+    updateTrimUI(true);
 }, { passive: false });
 
 window.addEventListener('mousemove', e => {
@@ -995,11 +996,11 @@ window.addEventListener('mousemove', e => {
     const pct = getEditorX(e);
     if (dragging === 'left')  trimLeftPct  = Math.min(pct, trimRightPct - 0.02);
     if (dragging === 'right') trimRightPct = Math.max(pct, trimLeftPct  + 0.02);
-    updateTrimUI();
+    updateTrimUI(true);
 });
 
-window.addEventListener('touchend',  () => { dragging = null; });
-window.addEventListener('mouseup',   () => { dragging = null; });
+window.addEventListener('touchend',  () => { if (dragging) { dragging = null; stopLivePreview(); } });
+window.addEventListener('mouseup',   () => { if (dragging) { dragging = null; stopLivePreview(); } });
 
 function previewTrim() {
     const lp  = looper[editorCh];
@@ -1172,12 +1173,60 @@ function audioBufferToWav(buffer) {
 //  PITCH SHIFTER & REVERB
 // ═══════════════════════════════════════════════════
 function createPitchShifter(context) {
-    const input = context.createGain(), output = context.createGain();
-    const delay = context.createDelay(), lfo = context.createOscillator(), lfoGain = context.createGain();
-    lfo.type = 'sawtooth'; lfo.frequency.value = 10; lfoGain.gain.value = 0;
-    lfo.connect(lfoGain); lfoGain.connect(delay.delayTime);
-    input.connect(delay); delay.connect(output); lfo.start();
-    return { input, output, setPitch: semi => lfoGain.gain.setTargetAtTime(semi*0.005, context.currentTime, 0.1) };
+    // Dual-delay pitch shifter with crossfade — gives audible pitch shift including deep bass
+    const input   = context.createGain();
+    const output  = context.createGain();
+    const dryGain = context.createGain();
+    const wetGain = context.createGain();
+    dryGain.gain.value = 0.0;  // mostly wet for effect
+    wetGain.gain.value = 1.0;
+
+    // Two delay lines with opposing LFOs (Doppler-style pitch shift)
+    const delay1 = context.createDelay(0.5);
+    const delay2 = context.createDelay(0.5);
+    const gain1  = context.createGain();
+    const gain2  = context.createGain();
+    const lfo1   = context.createOscillator();
+    const lfo2   = context.createOscillator();
+    const lfoG1  = context.createGain();
+    const lfoG2  = context.createGain();
+
+    lfo1.type = 'sawtooth'; lfo1.frequency.value = 2;
+    lfo2.type = 'sawtooth'; lfo2.frequency.value = 2;
+    // lfo2 is phase-shifted (we fake it by starting offset)
+    lfoG1.gain.value = 0;
+    lfoG2.gain.value = 0;
+
+    lfo1.connect(lfoG1); lfoG1.connect(delay1.delayTime);
+    lfo2.connect(lfoG2); lfoG2.connect(delay2.delayTime);
+
+    input.connect(delay1); input.connect(delay2);
+    delay1.connect(gain1); delay2.connect(gain2);
+    gain1.connect(wetGain); gain2.connect(wetGain);
+    input.connect(dryGain);
+    dryGain.connect(output); wetGain.connect(output);
+
+    lfo1.start(); lfo2.start(context.currentTime + 0.25);
+
+    let currentSemi = 0;
+    return {
+        input, output,
+        setPitch: (semi) => {
+            currentSemi = semi;
+            // Map semitones to LFO depth: deeper = larger delay sweep = lower pitch
+            // Negative semitones = deeper voice, positive = higher
+            // depth range: 0 (neutral) to 0.12 (extreme deep)
+            const depth = Math.abs(semi) * 0.004;
+            const speed = 0.8 + Math.abs(semi) * 0.08;
+            lfoG1.gain.setTargetAtTime(semi < 0 ? depth  :  -depth, context.currentTime, 0.15);
+            lfoG2.gain.setTargetAtTime(semi < 0 ? -depth :   depth, context.currentTime, 0.15);
+            lfo1.frequency.setTargetAtTime(speed, context.currentTime, 0.15);
+            lfo2.frequency.setTargetAtTime(speed, context.currentTime, 0.15);
+            // Wet/dry: more wet = more effect
+            const wetAmt = Math.min(1, Math.abs(semi) / 18);
+            dryGain.gain.setTargetAtTime(1 - wetAmt * 0.8, context.currentTime, 0.15);
+        }
+    };
 }
 
 function createReverbBuffer(context, duration, decay) {
