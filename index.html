@@ -308,20 +308,22 @@
         display: none; position: fixed; inset: 0; z-index: 400;
         flex-direction: column; align-items: center; justify-content: flex-end;
         padding-bottom: 60px; overflow: hidden;
+        background: #000;
     }
     .dance-overlay.open { display: flex; }
 
     /* colour flash layer */
     #danceFlash {
         position: absolute; inset: 0; pointer-events: none;
-        transition: background 0.05s;
+        transition: background 0.08s;
+        z-index: 0;
     }
 
     /* disco ball visual */
     .dance-ball-wrap {
         position: absolute; top: 50%; left: 50%;
         transform: translate(-50%, -60%);
-        pointer-events: none; z-index: 1;
+        pointer-events: none; z-index: 2;
     }
     .dance-ball {
         font-size: 120px; line-height: 1;
@@ -1447,18 +1449,19 @@ function animateDanceFlash() {
         // Fast random colour flashes
         if (now - lastFlash > (60 + Math.random() * 120)) {
             flashColorIdx = (flashColorIdx + 1) % FLASH_COLORS.length;
-            el.style.background = FLASH_COLORS[flashColorIdx] + '55';
+            el.style.background = FLASH_COLORS[flashColorIdx];
             lastFlash = now;
         }
     } else if (danceFlashStyle === 'pulse') {
         // Pulses with motion speed
-        const alpha = (0.1 + motion * 0.6).toFixed(2);
+        const alpha = (0.5 + motion * 0.5).toFixed(2);
         const col   = FLASH_COLORS[Math.floor(now / 400) % FLASH_COLORS.length];
-        el.style.background = col + Math.round(alpha * 255).toString(16).padStart(2,'0');
+        // blend between black and full color based on motion
+        el.style.background = col;
     } else {
         // Slow colour wash
         const hue = (now / 40) % 360;
-        el.style.background = `hsla(${hue}, 80%, 40%, 0.35)`;
+        el.style.background = `hsl(${hue}, 100%, 50%)`;
     }
 }
 
