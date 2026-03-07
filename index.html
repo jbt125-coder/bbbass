@@ -247,14 +247,10 @@
     let isInitialized = false;
     let micEnabled = true;
 
-    // Looper state per channel
-    const looper = {
-        1: { state: 'idle', mediaRecorder: null, chunks: [], buffer: null, sourceNode: null, startTime: 0, rafId: null },
-        2: { state: 'idle', mediaRecorder: null, chunks: [], buffer: null, sourceNode: null, startTime: 0, rafId: null }
-    };
+
 
     // We need a destination stream for the looper to record from
-    let looperDestination = null;
+
 
     async function initAudio() {
         if (isInitialized) return;
@@ -306,14 +302,7 @@
         bassGain.connect(ctx.destination);
         bassOsc.start();
 
-        // 3. LOOPER MIX BUS — a gain node that collects all audio for recording
-        looperDestination = ctx.createGain();
-        looperDestination.gain.value = 1;
-        vocalGain.connect(looperDestination);
-        echoNode.connect(looperDestination);
-        verbGain.connect(looperDestination);
-        bassGain.connect(looperDestination);
-        // looperDestination does NOT connect to ctx.destination — it's a silent tap
+        // 3. Looper uses event recording — no audio tap needed
 
         setupControls();
         document.getElementById('startBtn').style.display = 'none';
@@ -342,6 +331,7 @@
     // --- DRUM SYNTHESIS ---
     function playDrum(type) {
         if (!ctx) return;
+        loopCapture(type);
         const now = ctx.currentTime;
         const osc = ctx.createOscillator();
         const g = ctx.createGain();
@@ -354,7 +344,6 @@
             g.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
             osc.connect(g);
             g.connect(ctx.destination);
-            if (looperDestination) g.connect(looperDestination);
             osc.start(); osc.stop(now + 0.5);
             osc.onended = () => { g.disconnect(); };
         } else if (type === 'snare' || type === 'clap') {
@@ -371,7 +360,6 @@
             noise.connect(filter);
             filter.connect(g);
             g.connect(ctx.destination);
-            if (looperDestination) g.connect(looperDestination);
             noise.start();
             noise.onended = () => { g.disconnect(); filter.disconnect(); };
         } else if (type === 'hat') {
@@ -388,14 +376,27 @@
             noise.connect(filter);
             filter.connect(g);
             g.connect(ctx.destination);
-            if (looperDestination) g.connect(looperDestination);
             noise.start();
             noise.onended = () => { g.disconnect(); filter.disconnect(); };
         }
     }
 
-    // ===== LOOPER LOGIC =====
-    // Uses ScriptProcessor to capture raw PCM directly — reliable on all browsers
+    // ===== LOOPER LOGIC — Event-based (records drum hits + timestamps) =====
+
+    const looper = {
+        1: { state: 'idle', events: [], buffer: null, timers: [], startTime: 0, rafId: null, loopTimeout: null },
+        2: { state: 'idle', events: [], buffer: null, timers: [], startTime: 0, rafId: null, loopTimeout: null }
+    };
+
+    // Call this from playDrum so active recorders capture the hit
+    function loopCapture(type) {
+        [1, 2].forEach(ch => {
+            const lp = looper[ch];
+            if (lp.state === 'recording') {
+                lp.events.push({ type, t: performance.now() - lp.startTime });
+            }
+        });
+    }
 
     function loopRec(ch) {
         if (!isInitialized) return;
@@ -404,48 +405,20 @@
         if (lp.state === 'recording') { loopStop(ch); return; }
         if (lp.state === 'playing')   loopStop(ch);
 
-        const lengthMs   = parseInt(document.getElementById(`ch${ch}-length`).value) * 1000;
-        const lengthSec  = lengthMs / 1000;
-        const sampleRate = ctx.sampleRate;
-        const totalSamples = Math.ceil(sampleRate * lengthSec);
+        const lengthMs = parseInt(document.getElementById(`ch${ch}-length`).value) * 1000;
 
-        const bufSize = 4096;
-        const recorder = ctx.createScriptProcessor(bufSize, 2, 2);
-        let recorded = [new Float32Array(totalSamples), new Float32Array(totalSamples)];
-        let sampleCount = 0;
-
-        recorder.onaudioprocess = (e) => {
-            if (lp.state !== 'recording') return;
-            const L = e.inputBuffer.getChannelData(0);
-            const R = e.inputBuffer.getChannelData(1);
-            for (let i = 0; i < L.length; i++) {
-                if (sampleCount >= totalSamples) break;
-                recorded[0][sampleCount] = L[i];
-                recorded[1][sampleCount] = R[i];
-                sampleCount++;
-            }
-            const pct = Math.min((sampleCount / totalSamples) * 100, 100);
-            document.getElementById(`ch${ch}-bar`).style.width = pct + '%';
-        };
-
-        looperDestination.connect(recorder);
-        recorder.connect(ctx.createGain()); // dummy sink — prevents ScriptProcessor from silently dying
-
-        lp.state = 'recording';
-        lp._recorder = recorder;
-        lp._recorded = recorded;
+        lp.events   = [];
+        lp.state    = 'recording';
+        lp.startTime = performance.now();
         updateLoopUI(ch);
+        animateProgress(ch, lengthMs);
 
-        lp.recTimeout = setTimeout(() => {
+        lp.loopTimeout = setTimeout(() => {
             if (lp.state !== 'recording') return;
-            const audioBuffer = ctx.createBuffer(2, totalSamples, sampleRate);
-            audioBuffer.copyToChannel(lp._recorded[0], 0);
-            audioBuffer.copyToChannel(lp._recorded[1], 1);
-            lp.buffer = audioBuffer;
-            try { looperDestination.disconnect(lp._recorder); } catch(e) {}
-            try { lp._recorder.disconnect(); } catch(e) {}
-            lp.state = 'recorded';
+            lp.buffer = { events: [...lp.events], lengthMs };
+            lp.state  = 'recorded';
             document.getElementById(`ch${ch}-bar`).style.width = '0%';
+            cancelAnimationFrame(lp.rafId);
             updateLoopUI(ch);
             loopPlay(ch);
         }, lengthMs);
@@ -458,43 +431,43 @@
         if (lp.state === 'playing') return;
         lp.state = 'playing';
         updateLoopUI(ch);
-        playLoopBuffer(ch);
+        scheduleLoop(ch);
     }
 
-    function playLoopBuffer(ch) {
+    function scheduleLoop(ch) {
         const lp = looper[ch];
         if (lp.state !== 'playing') return;
-        const source = ctx.createBufferSource();
-        source.buffer = lp.buffer;
-        source.connect(ctx.destination);
-        source.onended = () => {
-            if (lp.state === 'playing') playLoopBuffer(ch);
-        };
-        source.start();
-        lp._source = source;
-        animateProgress(ch, lp.buffer.duration * 1000);
+
+        const { events, lengthMs } = lp.buffer;
+        const loopStart = performance.now();
+
+        // Schedule every drum hit
+        lp.timers = events.map(ev =>
+            setTimeout(() => {
+                if (lp.state === 'playing') playDrum(ev.type);
+            }, ev.t)
+        );
+
+        // Schedule next loop iteration
+        lp.loopTimeout = setTimeout(() => {
+            if (lp.state === 'playing') scheduleLoop(ch);
+        }, lengthMs);
+
+        animateProgress(ch, lengthMs);
     }
 
     function loopStop(ch) {
         const lp = looper[ch];
-        clearTimeout(lp.recTimeout);
         cancelAnimationFrame(lp.rafId);
-        if (lp._recorder) {
-            try { looperDestination.disconnect(lp._recorder); } catch(e) {}
-            try { lp._recorder.disconnect(); } catch(e) {}
-            lp._recorder = null;
-        }
-        if (lp._source) {
-            lp._source.onended = null;
-            try { lp._source.stop(); } catch(e) {}
-            lp._source = null;
-        }
-        lp.state = lp.buffer ? 'recorded' : 'idle';
+        clearTimeout(lp.loopTimeout);
+        lp.timers.forEach(t => clearTimeout(t));
+        lp.timers = [];
+        lp.state  = lp.buffer ? 'recorded' : 'idle';
         updateLoopUI(ch);
         document.getElementById(`ch${ch}-bar`).style.width = '0%';
     }
 
-        function animateProgress(ch, durationMs) {
+            function animateProgress(ch, durationMs) {
         const lp = looper[ch];
         const bar = document.getElementById(`ch${ch}-bar`);
         const start = performance.now();
