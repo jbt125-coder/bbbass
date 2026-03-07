@@ -15,6 +15,10 @@
             user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
             -webkit-tap-highlight-color: transparent;
         }
+        button {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
         .header { margin: 10px; text-transform: uppercase; letter-spacing: 3px; color: var(--neon); text-shadow: 0 0 10px var(--neon); font-size: 14px; }
 
 ```
@@ -164,6 +168,8 @@
         touch-action: none; box-shadow: 0 4px 8px rgba(0,0,0,0.5);
     }
     .oto-side-btn span { font-size: 18px; line-height: 1; }
+    .oto-side-btn.oct-btn  { border-color: #f59e0b; color: #f59e0b; }
+    .oto-side-btn.oct-btn.active { background: #f59e0b; color: black; box-shadow: 0 0 18px #f59e0b; }
     .oto-side-btn.mute-btn { border-color: #ff3860; color: #ff3860; }
     .oto-side-btn.mute-btn.muted { background: #ff3860; color: black; box-shadow: 0 0 18px #ff3860; }
     .oto-side-btn.wah-btn  { border-color: var(--purple); color: var(--purple); }
@@ -501,6 +507,12 @@
         <input type="range" class="vert" id="bass_vol" min="0" max="1" step="0.1" value="0.5">
     </div>
     <div class="oto-side-btns">
+        <button class="oto-side-btn oct-btn" id="otoOctBtn"
+            ontouchstart="otoOctStart(event)" ontouchend="otoOctEnd(event)"
+            ontouchcancel="otoOctEnd(event)"
+            onmousedown="otoOctStart(event)" onmouseup="otoOctEnd(event)">
+            <span>8va</span>OCT
+        </button>
         <button class="oto-side-btn mute-btn" id="otoMuteBtn"
             ontouchstart="otoMuteStart(event)" ontouchend="otoMuteEnd(event)"
             ontouchcancel="otoMuteEnd(event)"
@@ -1485,6 +1497,43 @@ function otoWahStop(e) {
     }
 }
 
+// ── OCT JUMP (hold to leap an octave up with vibrato — Otomatone squeal) ──
+let octActive = false;
+let octOriginalFreq = 100;
+let octVibRafId = null;
+let octVibPhase = 0;
+
+function otoOctStart(e) {
+    e.preventDefault();
+    if (!isInitialized) return;
+    octActive = true;
+    document.getElementById('otoOctBtn').classList.add('active');
+    // Grab current frequency and double it (one octave up)
+    octOriginalFreq = bassOsc.frequency.value || 100;
+    bassOsc.frequency.setTargetAtTime(octOriginalFreq * 2, ctx.currentTime, 0.04);
+    // Add fast vibrato for that squeaky Otomatone character
+    octVibPhase = 0;
+    function vibTick() {
+        if (!octActive || !isInitialized) return;
+        octVibPhase += 0.25;
+        const vibrato = (octOriginalFreq * 2) + Math.sin(octVibPhase) * 8;
+        bassOsc.frequency.setTargetAtTime(vibrato, ctx.currentTime, 0.01);
+        octVibRafId = requestAnimationFrame(vibTick);
+    }
+    octVibRafId = requestAnimationFrame(vibTick);
+}
+
+function otoOctEnd(e) {
+    e.preventDefault();
+    octActive = false;
+    cancelAnimationFrame(octVibRafId);
+    document.getElementById('otoOctBtn').classList.remove('active');
+    // Drop back to original frequency with a slight pitch slide down
+    if (isInitialized) {
+        bassOsc.frequency.setTargetAtTime(octOriginalFreq, ctx.currentTime, 0.08);
+    }
+}
+
 const joy   = document.getElementById('joy_container');
 const stick = document.getElementById('stick');
 joy.addEventListener('touchstart',  e=>{e.preventDefault();handleJoyMove(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
@@ -1498,7 +1547,15 @@ window.addEventListener('mouseup',  ()=>{if(mouseDown){mouseDown=false;handleJoy
 
 // ── ANTI-ZOOM / SELECTION ──
 let lastTap=0;
-document.addEventListener('touchstart',e=>{const now=Date.now();if(now-lastTap<300)e.preventDefault();lastTap=now;},{passive:false});
+document.addEventListener('touchstart', e => {
+    const now = Date.now();
+    if (now - lastTap < 350) { e.preventDefault(); e.stopPropagation(); }
+    lastTap = now;
+}, { passive: false });
+document.addEventListener('touchend', e => {
+    const now = Date.now();
+    if (now - lastTap < 350 && e.target.tagName !== 'INPUT') e.preventDefault();
+}, { passive: false });
 document.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('selectstart', e=>e.preventDefault());
 document.querySelectorAll('input[type=range]').forEach(s=>{
