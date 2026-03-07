@@ -204,6 +204,17 @@
         border-radius: 8px; cursor: pointer; letter-spacing: 1px;
     }
     .modal-close:active { background: #222; }
+    .merge-btn {
+        width: 100%; padding: 14px; background: #0e0e1a;
+        border: 2px solid #333; color: #555;
+        font-family: 'Courier New', monospace; font-size: 11px; font-weight: bold;
+        border-radius: 10px; cursor: pointer; letter-spacing: 1px;
+        margin-bottom: 14px; display: flex; flex-direction: column;
+        align-items: center; gap: 4px; transition: all 0.2s;
+    }
+    .merge-btn.ready { border-color: var(--neon); color: var(--neon); }
+    .merge-btn.ready:active { background: var(--neon); color: black; }
+    .merge-sub { font-size: 9px; opacity: 0.6; font-weight: normal; letter-spacing: 0.5px; }
 
     /* ── WAVEFORM EDITOR MODAL ── */
     .editor-modal {
@@ -602,6 +613,11 @@
                 CH 2<br><span class="ch-status" id="saveCh2Status">No recording</span>
             </div>
         </div>
+        <div class="modal-section-label">Merge Loops</div>
+        <button class="merge-btn" id="mergeBtn" onclick="mergeLoops()">
+            ⊕ COMBINE CH1 + CH2 → CH1
+            <span class="merge-sub" id="mergeStatus">Record both channels first</span>
+        </button>
         <button class="modal-close" onclick="closeCog()">CLOSE</button>
     </div>
 </div>
@@ -901,6 +917,17 @@ function scheduleLoop(ch) {
     const lengthMs = trimEnd - trimStart;
 
     // Play trimmed voice
+    // Play second voice layer if merged
+    if (lp.buffer.voiceBlob2) {
+        const audio2 = new Audio(lp.buffer.voiceBlob2);
+        audio2.volume = 0.85;
+        audio2.addEventListener('canplay', () => {
+            audio2.currentTime = trimStart / 1000;
+            audio2.play().catch(() => {});
+        }, { once: true });
+        audio2.load();
+        lp.voiceAudio2 = audio2;
+    }
     if (lp.voiceBlob) {
         const audio = new Audio(lp.voiceBlob);
         audio.volume = parseFloat(document.getElementById('v_vol').value);
@@ -924,11 +951,19 @@ function scheduleLoop(ch) {
                 if (lp.state !== 'playing') return;
                 if (ev.kind === 'drum') playDrum(ev.type);
                 else if (ev.kind === 'oto') {
-                    loopOsc[ch].frequency.setTargetAtTime(40+(ev.x+1)*60, ctx.currentTime, 0.05);
-                    loopFilter[ch].frequency.setTargetAtTime(200+(1-ev.y)*2000, ctx.currentTime, 0.05);
-                    loopGain[ch].gain.setTargetAtTime(ev.vol, ctx.currentTime, 0.05);
+                    const osCh = ev.srcCh || ch;
+                    loopOsc[osCh].frequency.setTargetAtTime(40+(ev.x+1)*60, ctx.currentTime, 0.05);
+                    loopFilter[osCh].frequency.setTargetAtTime(200+(1-ev.y)*2000, ctx.currentTime, 0.05);
+                    loopGain[osCh].gain.setTargetAtTime(ev.vol, ctx.currentTime, 0.05);
                 } else if (ev.kind === 'oto_end') {
-                    loopGain[ch].gain.setTargetAtTime(0, ctx.currentTime, 0.1);
+                    const osCh = ev.srcCh || ch;
+                    loopGain[osCh].gain.setTargetAtTime(0, ctx.currentTime, 0.1);
+                } else if (ev.kind === 'oto_mute') {
+                    const osCh = ev.srcCh || ch;
+                    loopGain[osCh].gain.setTargetAtTime(0, ctx.currentTime, 0.02);
+                } else if (ev.kind === 'oto_unmute') {
+                    const osCh = ev.srcCh || ch;
+                    loopGain[osCh].gain.setTargetAtTime(ev.vol, ctx.currentTime, 0.02);
                 }
             }, ev.t - trimStart)
         ) - 1];
@@ -958,7 +993,8 @@ function loopStop(ch) {
     clearTimeout(lp.loopTimeout);
     lp.timers.forEach(t => clearTimeout(t)); lp.timers = [];
     if (lp.voiceMediaRecorder && lp.voiceMediaRecorder.state !== 'inactive') lp.voiceMediaRecorder.stop();
-    if (lp.voiceAudio) { lp.voiceAudio.pause(); lp.voiceAudio = null; }
+    if (lp.voiceAudio)  { lp.voiceAudio.pause();  lp.voiceAudio  = null; }
+    if (lp.voiceAudio2) { lp.voiceAudio2.pause(); lp.voiceAudio2 = null; }
     if (isInitialized && loopGain[ch]) loopGain[ch].gain.setTargetAtTime(0, ctx.currentTime, 0.05);
     lp.state = lp.buffer ? 'recorded' : 'idle';
     updateLoopUI(ch);
@@ -1201,6 +1237,62 @@ function redoTrim() {
 // ═══════════════════════════════════════════════════
 //  COG MODAL
 // ═══════════════════════════════════════════════════
+function mergeLoops() {
+    const lp1 = looper[1];
+    const lp2 = looper[2];
+    if (!lp1.buffer || !lp2.buffer) return;
+
+    // Stop both channels first
+    loopStop(1); loopStop(2);
+
+    // Merged length = longer of the two (both loops cycle over it)
+    const mergedLen = Math.max(lp1.buffer.lengthMs, lp2.buffer.lengthMs);
+
+    // Merge events: keep CH1 events as-is, offset CH2 events by 0 (they start at same time)
+    // Tag each event with its source channel so the scheduler knows which osc to use
+    const ch1Events = lp1.buffer.events.map(ev => ({ ...ev, srcCh: 1 }));
+    const ch2Events = lp2.buffer.events.map(ev => ({ ...ev, srcCh: 2 }));
+    // Sort all events by time
+    const mergedEvents = [...ch1Events, ...ch2Events].sort((a, b) => a.t - b.t);
+
+    // Voice: if both have voice, we can't easily mix blobs without OfflineAudioContext
+    // Use CH1 voice as primary (it plays), CH2 voice layers on top via a second Audio element
+    // We store both blobs in the merged buffer
+    lp1.buffer = {
+        events:     mergedEvents,
+        lengthMs:   mergedLen,
+        trimStart:  0,
+        trimEnd:    mergedLen,
+        voiceBlob2: lp2.voiceBlob   // CH2 voice stored separately for dual playback
+    };
+    // Voice blob stays on lp1.voiceBlob (already CH1's)
+    // If CH1 had no voice but CH2 did, promote CH2's voice
+    if (!lp1.voiceBlob && lp2.voiceBlob) {
+        lp1.voiceBlob = lp2.voiceBlob;
+        lp1.buffer.voiceBlob2 = null;
+    }
+
+    // Clear CH2
+    lp2.buffer    = null;
+    lp2.voiceBlob = null;
+    lp2.events    = [];
+    lp2.state     = 'idle';
+    updateLoopUI(2);
+    document.getElementById('ch2-edit').style.display = 'none';
+
+    // Mark CH1 as recorded and ready
+    lp1.state = 'recorded';
+    updateLoopUI(1);
+    document.getElementById('ch1-edit').style.display = 'inline-block';
+
+    closeCog();
+
+    // Flash confirmation
+    const btn = document.getElementById('mergeBtn');
+    btn.textContent = '✓ MERGED!';
+    setTimeout(() => { btn.innerHTML = '⊕ COMBINE CH1 + CH2 → CH1<span class="merge-sub">Record both channels first</span>'; }, 1500);
+}
+
 function openCog() {
     // Update save button states
     [1,2].forEach(ch => {
@@ -1445,16 +1537,19 @@ function otoMuteStart(e) {
     e.preventDefault();
     otoMuted = true;
     document.getElementById('otoMuteBtn').classList.add('muted');
-    if (isInitialized) bassGain.gain.setTargetAtTime(0, ctx.currentTime, 0.02);
+    if (isInitialized) {
+        bassGain.gain.setTargetAtTime(0, ctx.currentTime, 0.02);
+        loopCapture({ kind: 'oto_mute' });
+    }
 }
 function otoMuteEnd(e) {
     e.preventDefault();
     otoMuted = false;
     document.getElementById('otoMuteBtn').classList.remove('muted');
-    // Restore volume only if not in snap mode at center (where gain is already 0)
     if (isInitialized && joyMode === 'free') {
         const vol = parseFloat(document.getElementById('bass_vol').value);
         bassGain.gain.setTargetAtTime(vol, ctx.currentTime, 0.02);
+        loopCapture({ kind: 'oto_unmute', vol });
     }
 }
 
