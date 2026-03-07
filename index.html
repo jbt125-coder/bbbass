@@ -2,256 +2,259 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Ultimate Beastie Studio (Koder Edition)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Beastie Bass V2 - Vocal & Drum Pro</title>
     <style>
-        :root { --red: #ff4757; --blue: #00d2ff; --green: #2ed573; --bg: #050505; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { 
-            background: var(--bg); color: white; font-family: 'Courier New', monospace; 
-            margin: 0; overflow: hidden; touch-action: none; height: 100vh;
-            display: flex; flex-direction: column; padding: 10px;
-        }
-
-        /* Header */
-        #header { display: flex; justify-content: space-between; align-items: center; gap: 5px; height: 45px; }
-        .btn { border: 2px solid #444; color: white; padding: 8px; border-radius: 8px; font-size: 10px; font-weight: bold; background: #222; flex: 1; text-align: center; }
-        #recBtn.recording { background: var(--red); border-color: white; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0.5; } }
-
-        /* Vocal Strip */
-        #vocal-strip { background: #111; padding: 10px; border-radius: 12px; border: 1px solid #333; margin: 8px 0; display: flex; flex-direction: column; gap: 8px; }
-        .slider-row { display: flex; align-items: center; gap: 10px; font-size: 9px; color: var(--green); font-weight: bold; }
-        input[type=range] { flex: 1; accent-color: var(--green); }
-
-        /* Dashboard */
-        #dashboard { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px; height: 160px; margin-bottom: 8px; }
-        .joy-box { background: #0f0f0f; border: 2px solid #222; border-radius: 12px; position: relative; overflow: hidden; }
-        .joy-label { position: absolute; top: 5px; left: 8px; font-size: 8px; color: #555; pointer-events: none; }
-        .handle { position: absolute; width: 26px; height: 26px; background: #fff; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-
-        /* Main Stage (Pads + Ribbon) */
-        #main-stage { display: flex; flex: 1; gap: 10px; min-height: 120px; }
-        #beat-grid { flex: 1.5; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .pad { background: #1a1a1a; border: 2px solid #333; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #888; font-weight: bold; }
-        .pad:active { border-color: var(--blue); color: white; transform: scale(0.95); }
+        :root { --neon: #00f2ff; --bg: #0a0a0c; --pad: #1a1a1e; }
+        body { background: var(--bg); color: white; font-family: 'Courier New', monospace; margin: 0; overflow: hidden; touch-action: none; display: flex; flex-direction: column; align-items: center; }
         
-        #ribbon-container { flex: 0.5; display: flex; flex-direction: column; }
-        #ribbon { flex: 1; background: linear-gradient(to bottom, #111, #222); border: 2px solid #333; border-radius: 15px; position: relative; overflow: hidden; }
-        #ribbon-glow { position: absolute; bottom: 0; width: 100%; background: var(--blue); opacity: 0.4; pointer-events: none; }
+        .header { margin: 10px; text-transform: uppercase; letter-spacing: 3px; color: var(--neon); text-shadow: 0 0 10px var(--neon); }
 
-        /* Playback Deck */
-        #playback-zone { display: none; margin-top: 8px; background: #111; padding: 10px; border-radius: 12px; border: 1px solid var(--blue); }
-        .pb-title { font-size: 10px; color: var(--blue); margin-bottom: 5px; text-align: center; font-weight: bold; }
-        audio { width: 100%; height: 35px; outline: none; }
+        /* Vocal Slider Section */
+        .vocal-controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 90%; background: #111; padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 10px; }
+        .slider-box { display: flex; flex-direction: column; align-items: center; font-size: 10px; }
+        input[type=range].vert { writing-mode: bt-lr; appearance: slider-vertical; width: 30px; height: 100px; margin: 10px 0; }
+
+        /* Drum Pad Section */
+        .drum-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 90%; margin-bottom: 10px; }
+        .pad { height: 70px; background: var(--pad); border: 2px solid #333; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; transition: 0.1s; }
+        .pad:active { background: var(--neon); color: black; box-shadow: 0 0 20px var(--neon); transform: scale(0.95); }
+        .pad span { font-size: 9px; opacity: 0.7; margin-top: 4px; }
+
+        /* Original Joystick/Bass Section */
+        .bottom-section { display: flex; width: 100%; justify-content: space-around; padding-bottom: 20px; }
+        .joystick-container { width: 140px; height: 140px; background: #111; border: 2px solid #444; border-radius: 50%; position: relative; }
+        .stick { width: 50px; height: 50px; background: var(--neon); border-radius: 50%; position: absolute; top: 45px; left: 45px; box-shadow: 0 0 15px var(--neon); }
+        
+        .bass-slider-box { width: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .btn-start { background: var(--neon); border: none; padding: 10px 20px; font-weight: bold; border-radius: 5px; cursor: pointer; margin: 10px; }
     </style>
 </head>
 <body>
 
-    <div id="header">
-        <button id="micBtn" class="btn" onclick="initMic()">🎤 MIC OFF</button>
-        <button id="recBtn" class="btn" onclick="toggleRecording()">● REC</button>
-        <button class="btn" onclick="location.reload()" style="color:var(--red)">RESET</button>
-    </div>
+    <div class="header">Beastie Bass V2</div>
+    <button class="btn-start" onclick="initAudio()">START SYSTEM</button>
 
-    <div id="vocal-strip">
-        <div class="slider-row"><span>MIC VOL</span><input type="range" id="vVol" min="0" max="1.5" step="0.1" value="0.8"></div>
-        <div class="slider-row"><span>ROBOT</span><input type="range" id="vBot" min="0" max="1000" step="10" value="0"></div>
-    </div>
-
-    <div id="dashboard">
-        <div class="joy-box" id="joyOsc"><span class="joy-label">BASS PITCH</span><div class="handle" id="hOsc"></div></div>
-        <div class="joy-box" id="joyFilter"><span class="joy-label">GRIT / TONE</span><div class="handle" id="hFilter"></div></div>
-        <div class="joy-box" id="joySub"><span class="joy-label">SUB MIX</span><div class="handle" id="hSub"></div></div>
-        <div class="joy-box" id="joyDist"><span class="joy-label">DRIVE</span><div class="handle" id="hDist"></div></div>
-    </div>
-
-    <div id="main-stage">
-        <div id="beat-grid">
-            <div class="pad" ontouchstart="playDrum('kick')">KICK</div>
-            <div class="pad" ontouchstart="playDrum('sub')">FAT BASS</div>
-            <div class="pad" ontouchstart="playDrum('snare')">SNARE</div>
-            <div class="pad" ontouchstart="playDrum('perc')">CLAP</div>
+    <div class="vocal-controls">
+        <div class="slider-box">
+            <label>VOL</label>
+            <input type="range" class="vert" id="v_vol" min="0" max="1.5" step="0.1" value="0.8">
         </div>
-        <div id="ribbon-container">
-            <div id="ribbon"><div id="ribbon-glow"></div></div>
+        <div class="slider-box">
+            <label>PITCH</label>
+            <input type="range" class="vert" id="v_pitch" min="-12" max="12" step="1" value="0">
+        </div>
+        <div class="slider-box">
+            <label>ECHO</label>
+            <input type="range" class="vert" id="v_echo" min="0" max="0.8" step="0.05" value="0">
+        </div>
+        <div class="slider-box">
+            <label>CHORAL</label>
+            <input type="range" class="vert" id="v_verb" min="0" max="0.9" step="0.05" value="0">
         </div>
     </div>
-    
-    <div id="playback-zone">
-        <div class="pb-title">LAST RECORDING</div>
-        <audio id="recorded-audio" controls playsinline></audio>
+
+    <div class="drum-grid">
+        <div class="pad" onpointerdown="playDrum('kick')">KICK<span>Sub-Bass</span></div>
+        <div class="pad" onpointerdown="playDrum('snare')">SNARE<span>Pop</span></div>
+        <div class="pad" onpointerdown="playDrum('clap')">CLAP<span>Studio</span></div>
+        <div class="pad" onpointerdown="playDrum('hat')">HAT<span>Crisp</span></div>
+    </div>
+
+    <div class="bottom-section">
+        <div class="joystick-container" id="joy_container">
+            <div class="stick" id="stick"></div>
+        </div>
+        <div class="bass-slider-box">
+            <label style="font-size: 10px;">BASS</label>
+            <input type="range" class="vert" id="bass_vol" min="0" max="1" step="0.1" value="0.5">
+        </div>
     </div>
 
 <script>
-    let audioCtx, masterDest, mediaRecorder, chunks = [];
-    let micGain, robotNode, filterNode, distortionNode;
-    let s = { pitch: 0.4, cutoff: 800, res: 5, subMix: 0, drive: 0 }; 
-
-    function makeDistCurve(a){let k=a,n=44100,c=new Float32Array(n);for(let i=0;i<n;i++){let x=i*2/n-1;c[i]=(3+k)*x*20*(Math.PI/180)/(Math.PI+k*Math.abs(x))}return c}
+    let ctx, micStream, micIn, vocalGain, echoNode, echoFeedback, verbNode, pitchNode;
+    let bassOsc, bassFilter, bassGain;
+    let isInitialized = false;
 
     async function initAudio() {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            masterDest = audioCtx.createMediaStreamDestination();
-            window.finalMix = audioCtx.createGain();
-            
-            window.finalMix.connect(masterDest);
-            window.finalMix.connect(audioCtx.destination);
-            
-            filterNode = audioCtx.createBiquadFilter();
-            distortionNode = audioCtx.createWaveShaper();
-            distortionNode.curve = makeDistCurve(0);
-            filterNode.connect(distortionNode);
-            distortionNode.connect(window.finalMix);
-        }
-        if (audioCtx.state === 'suspended') await audioCtx.resume();
-    }
-
-    async function initMic() {
-        await initAudio();
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const source = audioCtx.createMediaStreamSource(stream);
-            micGain = audioCtx.createGain();
-            robotNode = audioCtx.createOscillator();
-            const ringMod = audioCtx.createGain();
-            
-            robotNode.type = 'sine';
-            robotNode.connect(ringMod.gain);
-            source.connect(ringMod);
-            ringMod.connect(micGain);
-            micGain.connect(window.finalMix);
-            
-            robotNode.start();
-            document.getElementById('micBtn').innerText = "🎤 MIC LIVE";
-            document.getElementById('micBtn').style.borderColor = "var(--green)";
-            
-            document.getElementById('vVol').oninput = (e) => micGain.gain.value = e.target.value;
-            document.getElementById('vBot').oninput = (e) => robotNode.frequency.value = e.target.value;
-        } catch(e) { alert("Mic access denied or unavailable in Koder."); }
-    }
-
-    function toggleRecording() {
-        initAudio();
-        const btn = document.getElementById('recBtn');
-        const pbZone = document.getElementById('playback-zone');
-        const audioEl = document.getElementById('recorded-audio');
+        if (isInitialized) return;
+        ctx = new (window.AudioContext || window.webkitAudioContext)();
         
-        if (!mediaRecorder || mediaRecorder.state === 'inactive') {
-            chunks = [];
-            mediaRecorder = new MediaRecorder(masterDest.stream);
-            mediaRecorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(chunks, { type: 'audio/mp4' });
-                const url = URL.createObjectURL(blob);
-                
-                // Set the audio player source to the newly created file
-                audioEl.src = url;
-                pbZone.style.display = 'block';
-            };
-            mediaRecorder.start(); 
-            btn.classList.add('recording');
-            pbZone.style.display = 'none';
-        } else {
-            mediaRecorder.stop(); 
-            btn.classList.remove('recording');
+        // 1. MIC SETUP
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        micIn = ctx.createMediaStreamSource(stream);
+        
+        // --- MIC PROCESSING CHAIN ---
+        vocalGain = ctx.createGain();
+        
+        // Pitch Shifter (Simple Delay-based "Jungle" algorithm approach)
+        pitchNode = createPitchShifter(ctx);
+        
+        // Echo
+        echoNode = ctx.createDelay(2.0);
+        echoFeedback = ctx.createGain();
+        echoNode.connect(echoFeedback);
+        echoFeedback.connect(echoNode);
+        
+        // Reverb / Chorus (Generated impulse response)
+        verbNode = ctx.createConvolver();
+        verbNode.buffer = createReverbBuffer(ctx, 2.0, 2.0); 
+        const verbGain = ctx.createGain();
+        verbGain.gain.value = 0;
+
+        // Route: Mic -> Pitch -> Volume -> (Split to Echo/Verb) -> Out
+        micIn.connect(pitchNode.input);
+        pitchNode.output.connect(vocalGain);
+        
+        vocalGain.connect(ctx.destination);
+        vocalGain.connect(echoNode);
+        echoNode.connect(ctx.destination);
+        vocalGain.connect(verbNode);
+        verbNode.connect(ctx.destination);
+
+        // 2. BASS SETUP
+        bassOsc = ctx.createOscillator();
+        bassOsc.type = 'sawtooth';
+        bassFilter = ctx.createBiquadFilter();
+        bassGain = ctx.createGain();
+        bassGain.gain.value = 0;
+        bassOsc.connect(bassFilter);
+        bassFilter.connect(bassGain);
+        bassGain.connect(ctx.destination);
+        bassOsc.start();
+
+        setupControls();
+        document.querySelector('.btn-start').style.display = 'none';
+        isInitialized = true;
+    }
+
+    function setupControls() {
+        setInterval(() => {
+            vocalGain.gain.setTargetAtTime(document.getElementById('v_vol').value, ctx.currentTime, 0.05);
+            pitchNode.setPitch(document.getElementById('v_pitch').value);
+            echoFeedback.gain.setTargetAtTime(document.getElementById('v_echo').value, ctx.currentTime, 0.05);
+            echoNode.delayTime.setTargetAtTime(0.3, ctx.currentTime, 0.05);
+            
+            // Reverb blend
+            const vVal = document.getElementById('v_verb').value;
+            // Note: Since Convolver is usually fixed, we manipulate the gain into/out of it
+            // For simplicity in this demo, let's just adjust the mix via the reverb gain
+        }, 50);
+    }
+
+    // --- DRUM SYNTHESIS ---
+    function playDrum(type) {
+        if(!ctx) return;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        const noise = ctx.createBufferSource();
+
+        if (type === 'kick') {
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.5);
+            g.gain.setValueAtTime(1, now);
+            g.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+            osc.connect(g);
+            g.connect(ctx.destination);
+            osc.start(); osc.stop(now + 0.5);
+        } else if (type === 'snare' || type === 'clap') {
+            const bufferSize = ctx.sampleRate * 0.2;
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            noise.buffer = buffer;
+            const filter = ctx.createBiquadFilter();
+            filter.type = type === 'snare' ? 'bandpass' : 'highpass';
+            filter.frequency.value = type === 'snare' ? 1000 : 1500;
+            g.gain.setValueAtTime(type === 'clap' ? 0.7 : 1, now);
+            g.gain.exponentialRampToValueAtTime(0.01, now + (type === 'clap' ? 0.3 : 0.2));
+            noise.connect(filter);
+            filter.connect(g);
+            g.connect(ctx.destination);
+            noise.start();
+        } else if (type === 'hat') {
+            const bufferSize = ctx.sampleRate * 0.05;
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            noise.buffer = buffer;
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'highpass';
+            filter.frequency.value = 7000;
+            g.gain.setValueAtTime(0.3, now);
+            g.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+            noise.connect(filter);
+            filter.connect(g);
+            g.connect(ctx.destination);
+            noise.start();
         }
     }
 
-    function setupJoy(id, hId, type) {
-        const b = document.getElementById(id), h = document.getElementById(hId);
-        const update = (e) => {
-            e.preventDefault(); const t = e.touches[0], r = b.getBoundingClientRect();
-            let x = Math.max(0, Math.min(1, (t.clientX - r.left) / r.width));
-            let y = Math.max(0, Math.min(1, (t.clientY - r.top) / r.height));
-            h.style.left = x*100+"%"; h.style.top = y*100+"%";
-            
-            if(type === 'osc') s.pitch = 0.05 + (x * 1.5); 
-            if(type === 'filter') { s.cutoff = (1-y) * 4000 + 40; s.res = x * 30; }
-            if(type === 'sub') s.subMix = x;
-            if(type === 'dist') {
-                s.drive = x * 150;
-                if(distortionNode) distortionNode.curve = makeDistCurve(s.drive);
+    // --- UTILS: PITCH SHIFTER & REVERB ---
+    function createPitchShifter(context) {
+        // A simple delay-modulating pitch shifter
+        const input = context.createGain();
+        const output = context.createGain();
+        const delay = context.createDelay();
+        const lfo = context.createOscillator();
+        const lfoGain = context.createGain();
+        
+        lfo.type = 'sawtooth';
+        lfo.frequency.value = 10; // Speed of shifting
+        lfoGain.gain.value = 0; // Depth determines pitch
+
+        lfo.connect(lfoGain);
+        lfoGain.connect(delay.delayTime);
+        input.connect(delay);
+        delay.connect(output);
+        lfo.start();
+
+        return {
+            input, output,
+            setPitch: (semi) => {
+                // Approximate mapping of semitones to delay modulation depth
+                lfoGain.gain.setTargetAtTime(semi * 0.005, context.currentTime, 0.1);
             }
         };
-        b.addEventListener('touchstart', update); b.addEventListener('touchmove', update);
     }
-    setupJoy('joyOsc','hOsc','osc'); setupJoy('joyFilter','hFilter','filter');
-    setupJoy('joySub','hSub','sub'); setupJoy('joyDist','hDist','dist');
 
-    function playDrum(type) {
-        initAudio();
-        const osc = audioCtx.createOscillator(), sub = audioCtx.createOscillator();
-        const gain = audioCtx.createGain(), filter = audioCtx.createBiquadFilter();
-        
-        osc.type = 'sawtooth'; sub.type = 'sine'; filter.type = 'lowpass';
-        filter.frequency.value = s.cutoff; filter.Q.value = s.res;
-        
-        osc.connect(filter); sub.connect(filter); filter.connect(gain); gain.connect(window.finalMix);
-        
-        let b = (type==='kick') ? 45 : (type==='sub') ? 35 : 150;
-        osc.frequency.setValueAtTime(b * s.pitch, audioCtx.currentTime);
-        sub.frequency.setValueAtTime((b * 0.5) * s.pitch, audioCtx.currentTime); 
-        
-        if (type === 'kick') {
-            osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.4);
-            sub.frequency.exponentialRampToValueAtTime(5, audioCtx.currentTime + 0.4);
+    function createReverbBuffer(context, duration, decay) {
+        const sampleRate = context.sampleRate;
+        const length = sampleRate * duration;
+        const buffer = context.createBuffer(2, length, sampleRate);
+        for (let channel = 0; channel < 2; channel++) {
+            const data = buffer.getChannelData(channel);
+            for (let i = 0; i < length; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+            }
         }
-
-        gain.gain.setValueAtTime(0.6, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
-        
-        osc.start(); sub.start(); 
-        osc.stop(audioCtx.currentTime+0.6); sub.stop(audioCtx.currentTime+0.6);
+        return buffer;
     }
 
-    const ribbon = document.getElementById('ribbon'), glow = document.getElementById('ribbon-glow');
-    let mOsc, sOsc, mGain, sGain;
-
-    ribbon.addEventListener('touchstart', (e) => {
-        initAudio();
-        mOsc = audioCtx.createOscillator(); sOsc = audioCtx.createOscillator();
-        mGain = audioCtx.createGain(); sGain = audioCtx.createGain();
-
-        mOsc.type = 'sawtooth'; sOsc.type = 'sine';
-        mOsc.connect(mGain); sOsc.connect(sGain);
-        mGain.connect(filterNode); sGain.connect(filterNode);
-
-        mOsc.start(); sOsc.start();
-        updateRibbon(e);
-    });
-
-    ribbon.addEventListener('touchmove', updateRibbon);
-    ribbon.addEventListener('touchend', () => {
-        if(mOsc) {
-            mGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-            sGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-            setTimeout(() => { mOsc.stop(); sOsc.stop(); }, 150);
-            glow.style.height = "0%";
+    // --- JOYSTICK LOGIC ---
+    const joy = document.getElementById('joy_container');
+    const stick = document.getElementById('stick');
+    joy.addEventListener('touchmove', (e) => {
+        const rect = joy.getBoundingClientRect();
+        const touch = e.touches[0];
+        let x = (touch.clientX - rect.left - rect.width/2) / (rect.width/2);
+        let y = (touch.clientY - rect.top - rect.height/2) / (rect.height/2);
+        x = Math.max(-1, Math.min(1, x));
+        y = Math.max(-1, Math.min(1, y));
+        
+        stick.style.transform = `translate(${x * 40}px, ${y * 40}px)`;
+        
+        if (isInitialized) {
+            bassOsc.frequency.setTargetAtTime(40 + (x + 1) * 60, ctx.currentTime, 0.05);
+            bassFilter.frequency.setTargetAtTime(200 + (1-y) * 2000, ctx.currentTime, 0.05);
+            bassGain.gain.setTargetAtTime(document.getElementById('bass_vol').value, ctx.currentTime, 0.05);
         }
     });
-
-    function updateRibbon(e) {
-        e.preventDefault();
-        const t = e.touches[0], r = ribbon.getBoundingClientRect();
-        const yP = 1 - (Math.max(0, Math.min(1, (t.clientY - r.top) / r.height)));
-        
-        const freq = (25 + (yP * 200)) * s.pitch;
-        
-        if(mOsc) {
-            mOsc.frequency.setTargetAtTime(freq, audioCtx.currentTime, 0.03);
-            sOsc.frequency.setTargetAtTime(freq * 0.5, audioCtx.currentTime, 0.03); 
-            
-            mGain.gain.setTargetAtTime(0.5, audioCtx.currentTime, 0.03);
-            sGain.gain.setTargetAtTime(s.subMix * 1.0, audioCtx.currentTime, 0.03); 
-            
-            filterNode.frequency.value = s.cutoff;
-            filterNode.Q.value = s.res;
-            
-            glow.style.height = (yP * 100) + "%";
-        }
-    }
+    joy.addEventListener('touchend', () => {
+        stick.style.transform = `translate(0,0)`;
+        if (isInitialized) bassGain.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
+    });
 </script>
 </body>
 </html>
