@@ -413,29 +413,24 @@
         mr.ondataavailable = e => { if (e.data.size > 0) lp.chunks.push(e.data); };
         mr.onstop = () => {
             const blob = new Blob(lp.chunks, { type: 'audio/webm' });
-            const url = URL.createObjectURL(blob);
-            lp.buffer = url;
+            lp.buffer = URL.createObjectURL(blob);
+            lp.state = 'recorded';
+            updateLoopUI(ch);
+            cancelAnimationFrame(lp.rafId);
+            document.getElementById(`ch${ch}-bar`).style.width = '0%';
+            loopPlay(ch);
         };
 
-        const lengthSec = parseInt(document.getElementById(`ch${ch}-length`).value) * 1000;
+        const lengthMs = parseInt(document.getElementById(`ch${ch}-length`).value) * 1000;
         mr.start();
         lp.startTime = performance.now();
 
-        // Auto-stop after length
         lp.recTimeout = setTimeout(() => {
-            if (lp.state === 'recording') {
-                mr.stop();
-                lp.state = 'recorded';
-                updateLoopUI(ch);
-                cancelAnimationFrame(lp.rafId);
-                document.getElementById(`ch${ch}-bar`).style.width = '0%';
-                // Auto-play after recording
-                setTimeout(() => loopPlay(ch), 100);
-            }
-        }, lengthSec);
+            if (lp.state === 'recording') mr.stop();
+        }, lengthMs);
 
         updateLoopUI(ch);
-        animateProgress(ch, lengthSec);
+        animateProgress(ch, lengthMs);
     }
 
     function loopPlay(ch) {
