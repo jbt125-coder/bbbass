@@ -20,15 +20,20 @@
 ```
     /* ── TOP BAR ── */
     .top-bar {
-        display: flex; flex-direction: row; align-items: center;
-        justify-content: center; gap: 6px; margin-bottom: 10px;
-        max-width: 100vw; padding: 0 8px;
+        text-align: center;
+        margin-bottom: 10px;
+        white-space: nowrap;
+    }
+    .top-bar button {
+        display: inline-block;
+        vertical-align: middle;
+        margin: 0 3px;
     }
     .btn-start {
         background: var(--neon); border: none; padding: 8px 12px; font-weight: bold;
         border-radius: 8px; cursor: pointer; font-family: 'Courier New', monospace;
         font-size: 11px; color: black; transition: background 0.4s, color 0.4s, box-shadow 0.4s;
-        white-space: nowrap; flex: 0 0 auto;
+        white-space: nowrap;
     }
     .btn-start.on {
         background: var(--purple); color: white;
