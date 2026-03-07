@@ -3,12 +3,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Beastie Bass V2 - Vocal & Drum Pro</title>
     <style>
         :root { --neon: #00f2ff; --bg: #0a0a0c; --pad: #1a1a1e; }
         * { box-sizing: border-box; }
-        body { background: var(--bg); color: white; font-family: 'Courier New', monospace; margin: 0; overflow-y: auto; overflow-x: hidden; touch-action: pan-y; display: flex; flex-direction: column; align-items: center; padding-bottom: 30px; }
+        body { background: var(--bg); color: white; font-family: 'Courier New', monospace; margin: 0; overflow-y: auto; overflow-x: hidden; touch-action: pan-y; display: flex; flex-direction: column; align-items: center; padding-bottom: 30px; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 
 ```
     .header { margin: 10px; text-transform: uppercase; letter-spacing: 3px; color: var(--neon); text-shadow: 0 0 10px var(--neon); }
@@ -306,12 +306,14 @@
         bassGain.connect(ctx.destination);
         bassOsc.start();
 
-        // 3. LOOPER DESTINATION — capture everything going to output
-        looperDestination = ctx.createMediaStreamDestination();
+        // 3. LOOPER MIX BUS — a gain node that collects all audio for recording
+        looperDestination = ctx.createGain();
+        looperDestination.gain.value = 1;
         vocalGain.connect(looperDestination);
         echoNode.connect(looperDestination);
         verbGain.connect(looperDestination);
         bassGain.connect(looperDestination);
+        // looperDestination does NOT connect to ctx.destination — it's a silent tap
 
         setupControls();
         document.getElementById('startBtn').style.display = 'none';
@@ -393,44 +395,60 @@
     }
 
     // ===== LOOPER LOGIC =====
+    // Uses ScriptProcessor to capture raw PCM directly — reliable on all browsers
 
     function loopRec(ch) {
         if (!isInitialized) return;
         const lp = looper[ch];
 
-        // Stop any existing recording first
         if (lp.state === 'recording') { loopStop(ch); return; }
+        if (lp.state === 'playing')   loopStop(ch);
 
-        // Stop playback if playing
-        if (lp.state === 'playing') loopStop(ch);
+        const lengthMs   = parseInt(document.getElementById(`ch${ch}-length`).value) * 1000;
+        const lengthSec  = lengthMs / 1000;
+        const sampleRate = ctx.sampleRate;
+        const totalSamples = Math.ceil(sampleRate * lengthSec);
 
-        lp.chunks = [];
-        lp.state = 'recording';
+        const bufSize = 4096;
+        const recorder = ctx.createScriptProcessor(bufSize, 2, 2);
+        let recorded = [new Float32Array(totalSamples), new Float32Array(totalSamples)];
+        let sampleCount = 0;
 
-        const mr = new MediaRecorder(looperDestination.stream);
-        lp.mediaRecorder = mr;
-
-        mr.ondataavailable = e => { if (e.data.size > 0) lp.chunks.push(e.data); };
-        mr.onstop = () => {
-            const blob = new Blob(lp.chunks, { type: 'audio/webm' });
-            lp.buffer = URL.createObjectURL(blob);
-            lp.state = 'recorded';
-            updateLoopUI(ch);
-            cancelAnimationFrame(lp.rafId);
-            document.getElementById(`ch${ch}-bar`).style.width = '0%';
-            loopPlay(ch);
+        recorder.onaudioprocess = (e) => {
+            if (lp.state !== 'recording') return;
+            const L = e.inputBuffer.getChannelData(0);
+            const R = e.inputBuffer.getChannelData(1);
+            for (let i = 0; i < L.length; i++) {
+                if (sampleCount >= totalSamples) break;
+                recorded[0][sampleCount] = L[i];
+                recorded[1][sampleCount] = R[i];
+                sampleCount++;
+            }
+            const pct = Math.min((sampleCount / totalSamples) * 100, 100);
+            document.getElementById(`ch${ch}-bar`).style.width = pct + '%';
         };
 
-        const lengthMs = parseInt(document.getElementById(`ch${ch}-length`).value) * 1000;
-        mr.start();
-        lp.startTime = performance.now();
+        looperDestination.connect(recorder);
+        recorder.connect(ctx.createGain()); // dummy sink — prevents ScriptProcessor from silently dying
+
+        lp.state = 'recording';
+        lp._recorder = recorder;
+        lp._recorded = recorded;
+        updateLoopUI(ch);
 
         lp.recTimeout = setTimeout(() => {
-            if (lp.state === 'recording') mr.stop();
+            if (lp.state !== 'recording') return;
+            const audioBuffer = ctx.createBuffer(2, totalSamples, sampleRate);
+            audioBuffer.copyToChannel(lp._recorded[0], 0);
+            audioBuffer.copyToChannel(lp._recorded[1], 1);
+            lp.buffer = audioBuffer;
+            try { looperDestination.disconnect(lp._recorder); } catch(e) {}
+            try { lp._recorder.disconnect(); } catch(e) {}
+            lp.state = 'recorded';
+            document.getElementById(`ch${ch}-bar`).style.width = '0%';
+            updateLoopUI(ch);
+            loopPlay(ch);
         }, lengthMs);
-
-        updateLoopUI(ch);
-        animateProgress(ch, lengthMs);
     }
 
     function loopPlay(ch) {
@@ -438,49 +456,45 @@
         const lp = looper[ch];
         if (!lp.buffer) return;
         if (lp.state === 'playing') return;
-
         lp.state = 'playing';
         updateLoopUI(ch);
-
-        const lengthSec = parseInt(document.getElementById(`ch${ch}-length`).value);
-        playLoopBuffer(ch, lengthSec);
+        playLoopBuffer(ch);
     }
 
-    function playLoopBuffer(ch, lengthSec) {
+    function playLoopBuffer(ch) {
         const lp = looper[ch];
         if (lp.state !== 'playing') return;
-
-        const audio = new Audio(lp.buffer);
-        audio.onended = () => {
-            if (lp.state === 'playing') playLoopBuffer(ch, lengthSec);
+        const source = ctx.createBufferSource();
+        source.buffer = lp.buffer;
+        source.connect(ctx.destination);
+        source.onended = () => {
+            if (lp.state === 'playing') playLoopBuffer(ch);
         };
-        audio.play();
-        lp._audio = audio;
-
-        lp.startTime = performance.now();
-        animateProgress(ch, lengthSec * 1000);
+        source.start();
+        lp._source = source;
+        animateProgress(ch, lp.buffer.duration * 1000);
     }
 
     function loopStop(ch) {
         const lp = looper[ch];
         clearTimeout(lp.recTimeout);
         cancelAnimationFrame(lp.rafId);
-
-        if (lp.mediaRecorder && lp.mediaRecorder.state !== 'inactive') {
-            lp.mediaRecorder.stop();
+        if (lp._recorder) {
+            try { looperDestination.disconnect(lp._recorder); } catch(e) {}
+            try { lp._recorder.disconnect(); } catch(e) {}
+            lp._recorder = null;
         }
-        if (lp._audio) {
-            lp._audio.onended = null;
-            lp._audio.pause();
-            lp._audio = null;
+        if (lp._source) {
+            lp._source.onended = null;
+            try { lp._source.stop(); } catch(e) {}
+            lp._source = null;
         }
-
         lp.state = lp.buffer ? 'recorded' : 'idle';
         updateLoopUI(ch);
         document.getElementById(`ch${ch}-bar`).style.width = '0%';
     }
 
-    function animateProgress(ch, durationMs) {
+        function animateProgress(ch, durationMs) {
         const lp = looper[ch];
         const bar = document.getElementById(`ch${ch}-bar`);
         const start = performance.now();
@@ -626,6 +640,18 @@
     joy.addEventListener('mousedown', () => { mouseDown = true; });
     window.addEventListener('mousemove', (e) => { if (mouseDown) handleJoyMove(e.clientX, e.clientY); });
     window.addEventListener('mouseup', () => { if (mouseDown) { mouseDown = false; handleJoyEnd(); } });
+
+    // Prevent double-tap zoom on all elements
+    let lastTap = 0;
+    document.addEventListener('touchstart', (e) => {
+        const now = Date.now();
+        if (now - lastTap < 300) e.preventDefault();
+        lastTap = now;
+    }, { passive: false });
+
+    // Prevent long-press context menu / text selection popup
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
+    document.addEventListener('selectstart', (e) => e.preventDefault());
 </script>
 
 </body>
