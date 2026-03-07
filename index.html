@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -6,111 +7,293 @@
     <title>Beastie Bass V2 - Vocal & Drum Pro</title>
     <style>
         :root { --neon: #00f2ff; --bg: #0a0a0c; --pad: #1a1a1e; }
-        body { background: var(--bg); color: white; font-family: 'Courier New', monospace; margin: 0; overflow: hidden; touch-action: none; display: flex; flex-direction: column; align-items: center; }
-        
-        .header { margin: 10px; text-transform: uppercase; letter-spacing: 3px; color: var(--neon); text-shadow: 0 0 10px var(--neon); }
+        * { box-sizing: border-box; }
+        body { background: var(--bg); color: white; font-family: 'Courier New', monospace; margin: 0; overflow-y: auto; overflow-x: hidden; touch-action: pan-y; display: flex; flex-direction: column; align-items: center; padding-bottom: 30px; }
 
-        /* Vocal Slider Section */
-        .vocal-controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 90%; background: #111; padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 10px; }
-        .slider-box { display: flex; flex-direction: column; align-items: center; font-size: 10px; }
-        input[type=range].vert { writing-mode: bt-lr; appearance: slider-vertical; width: 30px; height: 100px; margin: 10px 0; }
+```
+    .header { margin: 10px; text-transform: uppercase; letter-spacing: 3px; color: var(--neon); text-shadow: 0 0 10px var(--neon); }
 
-        /* Drum Pad Section */
-        .drum-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 90%; margin-bottom: 10px; }
-        .pad { height: 70px; background: var(--pad); border: 2px solid #333; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; transition: 0.1s; }
-        .pad:active { background: var(--neon); color: black; box-shadow: 0 0 20px var(--neon); transform: scale(0.95); }
-        .pad span { font-size: 9px; opacity: 0.7; margin-top: 4px; }
+    /* Vocal Slider Section */
+    .vocal-controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 90%; background: #111; padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 10px; }
+    .slider-box { display: flex; flex-direction: column; align-items: center; font-size: 10px; }
+    input[type=range].vert { writing-mode: bt-lr; appearance: slider-vertical; width: 30px; height: 100px; margin: 10px 0; }
 
-        /* Original Joystick/Bass Section */
-        .bottom-section { display: flex; width: 100%; justify-content: space-around; padding-bottom: 20px; }
-        .joystick-container { width: 140px; height: 140px; background: #111; border: 2px solid #444; border-radius: 50%; position: relative; }
-        .stick { width: 50px; height: 50px; background: var(--neon); border-radius: 50%; position: absolute; top: 45px; left: 45px; box-shadow: 0 0 15px var(--neon); }
-        
-        .bass-slider-box { width: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .btn-start { background: var(--neon); border: none; padding: 10px 20px; font-weight: bold; border-radius: 5px; cursor: pointer; margin: 10px; }
-    </style>
+    /* Mic Toggle */
+    .mic-toggle-row { width: 90%; display: flex; justify-content: flex-end; margin-bottom: 6px; }
+    .mic-btn {
+        background: #1a1a1e;
+        border: 2px solid #00f2ff;
+        color: #00f2ff;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        font-weight: bold;
+        padding: 6px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+        letter-spacing: 1px;
+        transition: background 0.2s, color 0.2s;
+    }
+    .mic-btn.off {
+        border-color: #ff3860;
+        color: #ff3860;
+    }
+    .mic-btn.off::before { content: '🎙 MIC OFF'; }
+    .mic-btn.on::before { content: '🎙 MIC ON'; }
+
+    /* Drum Pad Section */
+    .drum-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 90%; margin-bottom: 10px; }
+    .pad { height: 70px; background: var(--pad); border: 2px solid #333; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; transition: 0.1s; cursor: pointer; user-select: none; }
+    .pad:active, .pad.active { background: var(--neon); color: black; box-shadow: 0 0 20px var(--neon); transform: scale(0.95); }
+    .pad span { font-size: 9px; opacity: 0.7; margin-top: 4px; }
+
+    /* ===== LOOPER SECTION ===== */
+    .looper-section {
+        width: 90%;
+        background: #0e0e12;
+        border: 1px solid #2a2a3a;
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+    .looper-title {
+        font-size: 10px;
+        letter-spacing: 2px;
+        color: var(--neon);
+        text-transform: uppercase;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+    .looper-channels { display: flex; flex-direction: column; gap: 8px; }
+    .looper-channel {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #151518;
+        border-radius: 8px;
+        padding: 8px 10px;
+        border: 1px solid #222;
+    }
+    .ch-label {
+        font-size: 10px;
+        color: #888;
+        min-width: 24px;
+        letter-spacing: 1px;
+    }
+    .ch-length {
+        background: #1a1a1e;
+        border: 1px solid #333;
+        color: white;
+        font-family: 'Courier New', monospace;
+        font-size: 10px;
+        padding: 4px 6px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .ch-btns { display: flex; gap: 5px; flex: 1; justify-content: flex-end; }
+    .loop-btn {
+        font-family: 'Courier New', monospace;
+        font-size: 10px;
+        font-weight: bold;
+        padding: 5px 10px;
+        border-radius: 5px;
+        border: 2px solid;
+        cursor: pointer;
+        letter-spacing: 1px;
+        transition: all 0.15s;
+        background: transparent;
+    }
+    .loop-btn.rec  { border-color: #ff3860; color: #ff3860; }
+    .loop-btn.rec.active  { background: #ff3860; color: black; box-shadow: 0 0 12px #ff3860; }
+    .loop-btn.play { border-color: #00f2ff; color: #00f2ff; }
+    .loop-btn.play.active { background: #00f2ff; color: black; box-shadow: 0 0 12px #00f2ff; }
+    .loop-btn.stop { border-color: #888; color: #888; }
+    .loop-btn.stop:active { background: #888; color: black; }
+
+    .ch-progress {
+        width: 100%;
+        height: 3px;
+        background: #222;
+        border-radius: 2px;
+        margin-top: 6px;
+        overflow: hidden;
+    }
+    .ch-progress-bar {
+        height: 100%;
+        width: 0%;
+        border-radius: 2px;
+        transition: none;
+    }
+    .ch1 .ch-progress-bar { background: #ff3860; }
+    .ch2 .ch-progress-bar { background: #00f2ff; }
+
+    /* ===== BOTTOM SECTION with Otomatone ===== */
+    .bottom-section { display: flex; width: 90%; justify-content: space-around; align-items: flex-end; padding-bottom: 10px; margin-top: 6px; }
+    
+    .otomatone-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .otomatone-label { font-size: 9px; letter-spacing: 2px; color: #888; text-transform: uppercase; }
+
+    .joystick-container { width: 140px; height: 140px; background: #111; border: 2px solid #444; border-radius: 50%; position: relative; touch-action: none; user-select: none; -webkit-user-select: none; }
+    .stick {
+        width: 50px; height: 50px;
+        background: var(--neon);
+        border-radius: 50%;
+        position: absolute;
+        top: 45px; left: 45px;
+        box-shadow: 0 0 15px var(--neon), 0 0 30px var(--neon);
+        transition: box-shadow 0.1s;
+    }
+    
+    .bass-slider-box { width: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .btn-start { background: var(--neon); border: none; padding: 10px 20px; font-weight: bold; border-radius: 5px; cursor: pointer; margin: 10px; font-family: 'Courier New', monospace; font-size: 14px; }
+</style>
+```
+
 </head>
 <body>
 
-    <div class="header">Beastie Bass V2</div>
-    <button class="btn-start" onclick="initAudio()">START SYSTEM</button>
+```
+<div class="header">Beastie Bass V2</div>
+<button class="btn-start" id="startBtn" onclick="initAudio()">START SYSTEM</button>
 
-    <div class="vocal-controls">
-        <div class="slider-box">
-            <label>VOL</label>
-            <input type="range" class="vert" id="v_vol" min="0" max="1.5" step="0.1" value="0.8">
-        </div>
-        <div class="slider-box">
-            <label>PITCH</label>
-            <input type="range" class="vert" id="v_pitch" min="-12" max="12" step="1" value="0">
-        </div>
-        <div class="slider-box">
-            <label>ECHO</label>
-            <input type="range" class="vert" id="v_echo" min="0" max="0.8" step="0.05" value="0">
-        </div>
-        <div class="slider-box">
-            <label>CHORAL</label>
-            <input type="range" class="vert" id="v_verb" min="0" max="0.9" step="0.05" value="0">
-        </div>
+<div class="vocal-controls">
+    <div class="slider-box">
+        <label>VOL</label>
+        <input type="range" class="vert" id="v_vol" min="0" max="1.5" step="0.1" value="0.8">
     </div>
-
-    <div class="drum-grid">
-        <div class="pad" onpointerdown="playDrum('kick')">KICK<span>Sub-Bass</span></div>
-        <div class="pad" onpointerdown="playDrum('snare')">SNARE<span>Pop</span></div>
-        <div class="pad" onpointerdown="playDrum('clap')">CLAP<span>Studio</span></div>
-        <div class="pad" onpointerdown="playDrum('hat')">HAT<span>Crisp</span></div>
+    <div class="slider-box">
+        <label>PITCH</label>
+        <input type="range" class="vert" id="v_pitch" min="-12" max="12" step="1" value="0">
     </div>
+    <div class="slider-box">
+        <label>ECHO</label>
+        <input type="range" class="vert" id="v_echo" min="0" max="0.8" step="0.05" value="0">
+    </div>
+    <div class="slider-box">
+        <label>CHORAL</label>
+        <input type="range" class="vert" id="v_verb" min="0" max="0.9" step="0.05" value="0">
+    </div>
+</div>
 
-    <div class="bottom-section">
+<!-- Mic Toggle -->
+<div class="mic-toggle-row">
+    <button class="mic-btn on" id="micToggle" onclick="toggleMic()"></button>
+</div>
+
+<div class="drum-grid">
+    <div class="pad" onpointerdown="playDrum('kick')">KICK<span>Sub-Bass</span></div>
+    <div class="pad" onpointerdown="playDrum('snare')">SNARE<span>Pop</span></div>
+    <div class="pad" onpointerdown="playDrum('clap')">CLAP<span>Studio</span></div>
+    <div class="pad" onpointerdown="playDrum('hat')">HAT<span>Crisp</span></div>
+</div>
+
+<!-- LOOPER SECTION -->
+<div class="looper-section">
+    <div class="looper-title">⟳ Looper</div>
+    <div class="looper-channels">
+        <!-- Channel 1 -->
+        <div class="looper-channel ch1" id="loopCh1">
+            <span class="ch-label">CH 1</span>
+            <select class="ch-length" id="ch1-length">
+                <option value="2">2s</option>
+                <option value="4" selected>4s</option>
+                <option value="8">8s</option>
+                <option value="16">16s</option>
+            </select>
+            <div class="ch-btns">
+                <button class="loop-btn rec"  id="ch1-rec"  onclick="loopRec(1)">REC</button>
+                <button class="loop-btn play" id="ch1-play" onclick="loopPlay(1)">PLAY</button>
+                <button class="loop-btn stop" id="ch1-stop" onclick="loopStop(1)">STOP</button>
+            </div>
+        </div>
+        <div class="ch-progress" id="ch1-prog"><div class="ch-progress-bar" id="ch1-bar"></div></div>
+
+        <!-- Channel 2 -->
+        <div class="looper-channel ch2" id="loopCh2">
+            <span class="ch-label">CH 2</span>
+            <select class="ch-length" id="ch2-length">
+                <option value="2">2s</option>
+                <option value="4" selected>4s</option>
+                <option value="8">8s</option>
+                <option value="16">16s</option>
+            </select>
+            <div class="ch-btns">
+                <button class="loop-btn rec"  id="ch2-rec"  onclick="loopRec(2)">REC</button>
+                <button class="loop-btn play" id="ch2-play" onclick="loopPlay(2)">PLAY</button>
+                <button class="loop-btn stop" id="ch2-stop" onclick="loopStop(2)">STOP</button>
+            </div>
+        </div>
+        <div class="ch-progress" id="ch2-prog"><div class="ch-progress-bar" id="ch2-bar"></div></div>
+    </div>
+</div>
+
+<!-- BOTTOM: Bass slider + Otomatone -->
+<div class="bottom-section">
+    <div class="bass-slider-box">
+        <label style="font-size: 10px;">BASS</label>
+        <input type="range" class="vert" id="bass_vol" min="0" max="1" step="0.1" value="0.5">
+    </div>
+    <div class="otomatone-wrap">
         <div class="joystick-container" id="joy_container">
             <div class="stick" id="stick"></div>
         </div>
-        <div class="bass-slider-box">
-            <label style="font-size: 10px;">BASS</label>
-            <input type="range" class="vert" id="bass_vol" min="0" max="1" step="0.1" value="0.5">
-        </div>
+        <div class="otomatone-label">Otomatone</div>
     </div>
+</div>
+```
 
 <script>
-    let ctx, micStream, micIn, vocalGain, echoNode, echoFeedback, verbNode, pitchNode;
+    let ctx, micStream, micIn, micGateGain, vocalGain, echoNode, echoFeedback, verbNode, pitchNode;
     let bassOsc, bassFilter, bassGain;
     let isInitialized = false;
+    let micEnabled = true;
+
+    // Looper state per channel
+    const looper = {
+        1: { state: 'idle', mediaRecorder: null, chunks: [], buffer: null, sourceNode: null, startTime: 0, rafId: null },
+        2: { state: 'idle', mediaRecorder: null, chunks: [], buffer: null, sourceNode: null, startTime: 0, rafId: null }
+    };
+
+    // We need a destination stream for the looper to record from
+    let looperDestination = null;
 
     async function initAudio() {
         if (isInitialized) return;
         ctx = new (window.AudioContext || window.webkitAudioContext)();
-        
+
         // 1. MIC SETUP
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         micIn = ctx.createMediaStreamSource(stream);
-        
+
+        // Mic gate (for MIC ON/OFF)
+        micGateGain = ctx.createGain();
+        micGateGain.gain.value = 1;
+
         // --- MIC PROCESSING CHAIN ---
         vocalGain = ctx.createGain();
-        
-        // Pitch Shifter (Simple Delay-based "Jungle" algorithm approach)
         pitchNode = createPitchShifter(ctx);
-        
-        // Echo
+
         echoNode = ctx.createDelay(2.0);
         echoFeedback = ctx.createGain();
         echoNode.connect(echoFeedback);
         echoFeedback.connect(echoNode);
-        
-        // Reverb / Chorus (Generated impulse response)
+
         verbNode = ctx.createConvolver();
-        verbNode.buffer = createReverbBuffer(ctx, 2.0, 2.0); 
+        verbNode.buffer = createReverbBuffer(ctx, 2.0, 2.0);
         const verbGain = ctx.createGain();
         verbGain.gain.value = 0;
+        window._verbGain = verbGain; // expose for slider
 
-        // Route: Mic -> Pitch -> Volume -> (Split to Echo/Verb) -> Out
-        micIn.connect(pitchNode.input);
+        // Route: Mic -> Gate -> Pitch -> Volume -> (Split to Echo/Verb) -> Out
+        micIn.connect(micGateGain);
+        micGateGain.connect(pitchNode.input);
         pitchNode.output.connect(vocalGain);
-        
+
         vocalGain.connect(ctx.destination);
         vocalGain.connect(echoNode);
         echoNode.connect(ctx.destination);
         vocalGain.connect(verbNode);
-        verbNode.connect(ctx.destination);
+        verbNode.connect(verbGain);
+        verbGain.connect(ctx.destination);
 
         // 2. BASS SETUP
         bassOsc = ctx.createOscillator();
@@ -123,9 +306,23 @@
         bassGain.connect(ctx.destination);
         bassOsc.start();
 
+        // 3. LOOPER DESTINATION — capture everything going to output
+        looperDestination = ctx.createMediaStreamDestination();
+        vocalGain.connect(looperDestination);
+        echoNode.connect(looperDestination);
+        verbGain.connect(looperDestination);
+        bassGain.connect(looperDestination);
+
         setupControls();
-        document.querySelector('.btn-start').style.display = 'none';
+        document.getElementById('startBtn').style.display = 'none';
         isInitialized = true;
+    }
+
+    function toggleMic() {
+        micEnabled = !micEnabled;
+        const btn = document.getElementById('micToggle');
+        if (micGateGain) micGateGain.gain.value = micEnabled ? 1 : 0;
+        btn.className = 'mic-btn ' + (micEnabled ? 'on' : 'off');
     }
 
     function setupControls() {
@@ -134,17 +331,15 @@
             pitchNode.setPitch(document.getElementById('v_pitch').value);
             echoFeedback.gain.setTargetAtTime(document.getElementById('v_echo').value, ctx.currentTime, 0.05);
             echoNode.delayTime.setTargetAtTime(0.3, ctx.currentTime, 0.05);
-            
-            // Reverb blend
-            const vVal = document.getElementById('v_verb').value;
-            // Note: Since Convolver is usually fixed, we manipulate the gain into/out of it
-            // For simplicity in this demo, let's just adjust the mix via the reverb gain
+            if (window._verbGain) {
+                window._verbGain.gain.setTargetAtTime(document.getElementById('v_verb').value, ctx.currentTime, 0.05);
+            }
         }, 50);
     }
 
     // --- DRUM SYNTHESIS ---
     function playDrum(type) {
-        if(!ctx) return;
+        if (!ctx) return;
         const now = ctx.currentTime;
         const osc = ctx.createOscillator();
         const g = ctx.createGain();
@@ -157,7 +352,9 @@
             g.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
             osc.connect(g);
             g.connect(ctx.destination);
+            if (looperDestination) g.connect(looperDestination);
             osc.start(); osc.stop(now + 0.5);
+            osc.onended = () => { g.disconnect(); };
         } else if (type === 'snare' || type === 'clap') {
             const bufferSize = ctx.sampleRate * 0.2;
             const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -172,7 +369,9 @@
             noise.connect(filter);
             filter.connect(g);
             g.connect(ctx.destination);
+            if (looperDestination) g.connect(looperDestination);
             noise.start();
+            noise.onended = () => { g.disconnect(); filter.disconnect(); };
         } else if (type === 'hat') {
             const bufferSize = ctx.sampleRate * 0.05;
             const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -187,13 +386,132 @@
             noise.connect(filter);
             filter.connect(g);
             g.connect(ctx.destination);
+            if (looperDestination) g.connect(looperDestination);
             noise.start();
+            noise.onended = () => { g.disconnect(); filter.disconnect(); };
         }
+    }
+
+    // ===== LOOPER LOGIC =====
+
+    function loopRec(ch) {
+        if (!isInitialized) return;
+        const lp = looper[ch];
+
+        // Stop any existing recording first
+        if (lp.state === 'recording') { loopStop(ch); return; }
+
+        // Stop playback if playing
+        if (lp.state === 'playing') loopStop(ch);
+
+        lp.chunks = [];
+        lp.state = 'recording';
+
+        const mr = new MediaRecorder(looperDestination.stream);
+        lp.mediaRecorder = mr;
+
+        mr.ondataavailable = e => { if (e.data.size > 0) lp.chunks.push(e.data); };
+        mr.onstop = () => {
+            const blob = new Blob(lp.chunks, { type: 'audio/webm' });
+            const url = URL.createObjectURL(blob);
+            lp.buffer = url;
+        };
+
+        const lengthSec = parseInt(document.getElementById(`ch${ch}-length`).value) * 1000;
+        mr.start();
+        lp.startTime = performance.now();
+
+        // Auto-stop after length
+        lp.recTimeout = setTimeout(() => {
+            if (lp.state === 'recording') {
+                mr.stop();
+                lp.state = 'recorded';
+                updateLoopUI(ch);
+                cancelAnimationFrame(lp.rafId);
+                document.getElementById(`ch${ch}-bar`).style.width = '0%';
+                // Auto-play after recording
+                setTimeout(() => loopPlay(ch), 100);
+            }
+        }, lengthSec);
+
+        updateLoopUI(ch);
+        animateProgress(ch, lengthSec);
+    }
+
+    function loopPlay(ch) {
+        if (!isInitialized) return;
+        const lp = looper[ch];
+        if (!lp.buffer) return;
+        if (lp.state === 'playing') return;
+
+        lp.state = 'playing';
+        updateLoopUI(ch);
+
+        const lengthSec = parseInt(document.getElementById(`ch${ch}-length`).value);
+        playLoopBuffer(ch, lengthSec);
+    }
+
+    function playLoopBuffer(ch, lengthSec) {
+        const lp = looper[ch];
+        if (lp.state !== 'playing') return;
+
+        const audio = new Audio(lp.buffer);
+        audio.onended = () => {
+            if (lp.state === 'playing') playLoopBuffer(ch, lengthSec);
+        };
+        audio.play();
+        lp._audio = audio;
+
+        lp.startTime = performance.now();
+        animateProgress(ch, lengthSec * 1000);
+    }
+
+    function loopStop(ch) {
+        const lp = looper[ch];
+        clearTimeout(lp.recTimeout);
+        cancelAnimationFrame(lp.rafId);
+
+        if (lp.mediaRecorder && lp.mediaRecorder.state !== 'inactive') {
+            lp.mediaRecorder.stop();
+        }
+        if (lp._audio) {
+            lp._audio.onended = null;
+            lp._audio.pause();
+            lp._audio = null;
+        }
+
+        lp.state = lp.buffer ? 'recorded' : 'idle';
+        updateLoopUI(ch);
+        document.getElementById(`ch${ch}-bar`).style.width = '0%';
+    }
+
+    function animateProgress(ch, durationMs) {
+        const lp = looper[ch];
+        const bar = document.getElementById(`ch${ch}-bar`);
+        const start = performance.now();
+
+        function tick(now) {
+            const elapsed = now - start;
+            const pct = Math.min((elapsed / durationMs) * 100, 100);
+            bar.style.width = pct + '%';
+            if (pct < 100 && (lp.state === 'recording' || lp.state === 'playing')) {
+                lp.rafId = requestAnimationFrame(tick);
+            }
+        }
+        lp.rafId = requestAnimationFrame(tick);
+    }
+
+    function updateLoopUI(ch) {
+        const lp = looper[ch];
+        const rec  = document.getElementById(`ch${ch}-rec`);
+        const play = document.getElementById(`ch${ch}-play`);
+
+        rec.classList.toggle('active', lp.state === 'recording');
+        play.classList.toggle('active', lp.state === 'playing');
     }
 
     // --- UTILS: PITCH SHIFTER & REVERB ---
     function createPitchShifter(context) {
-        // A simple delay-modulating pitch shifter
         const input = context.createGain();
         const output = context.createGain();
         const delay = context.createDelay();
@@ -201,8 +519,8 @@
         const lfoGain = context.createGain();
         
         lfo.type = 'sawtooth';
-        lfo.frequency.value = 10; // Speed of shifting
-        lfoGain.gain.value = 0; // Depth determines pitch
+        lfo.frequency.value = 10;
+        lfoGain.gain.value = 0;
 
         lfo.connect(lfoGain);
         lfoGain.connect(delay.delayTime);
@@ -213,7 +531,6 @@
         return {
             input, output,
             setPitch: (semi) => {
-                // Approximate mapping of semitones to delay modulation depth
                 lfoGain.gain.setTargetAtTime(semi * 0.005, context.currentTime, 0.1);
             }
         };
@@ -232,29 +549,89 @@
         return buffer;
     }
 
-    // --- JOYSTICK LOGIC ---
+    // --- OTOMATONE JOYSTICK LOGIC ---
     const joy = document.getElementById('joy_container');
     const stick = document.getElementById('stick');
-    joy.addEventListener('touchmove', (e) => {
+
+    function hsvToHex(h, s, v) {
+        h = h % 360;
+        const c = v * s;
+        const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+        const m = v - c;
+        let r = 0, g = 0, b = 0;
+        if (h < 60)       { r = c; g = x; b = 0; }
+        else if (h < 120) { r = x; g = c; b = 0; }
+        else if (h < 180) { r = 0; g = c; b = x; }
+        else if (h < 240) { r = 0; g = x; b = c; }
+        else if (h < 300) { r = x; g = 0; b = c; }
+        else              { r = c; g = 0; b = x; }
+        const toHex = n => Math.round((n + m) * 255).toString(16).padStart(2, '0');
+        return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    }
+
+    function updateStickColor(x, y) {
+        // x: -1 to 1 → hue 0 to 360
+        // y: -1 to 1 → brightness 0.5 to 1.0
+        const hue = (x + 1) / 2 * 360;
+        const brightness = 0.5 + (1 - (y + 1) / 2) * 0.5;
+        const color = hsvToHex(hue, 1.0, brightness);
+        stick.style.background = color;
+        stick.style.boxShadow = `0 0 15px ${color}, 0 0 30px ${color}`;
+    }
+
+    function handleJoyMove(clientX, clientY) {
         const rect = joy.getBoundingClientRect();
-        const touch = e.touches[0];
-        let x = (touch.clientX - rect.left - rect.width/2) / (rect.width/2);
-        let y = (touch.clientY - rect.top - rect.height/2) / (rect.height/2);
+        let x = (clientX - rect.left - rect.width / 2) / (rect.width / 2);
+        let y = (clientY - rect.top - rect.height / 2) / (rect.height / 2);
         x = Math.max(-1, Math.min(1, x));
         y = Math.max(-1, Math.min(1, y));
-        
+
         stick.style.transform = `translate(${x * 40}px, ${y * 40}px)`;
-        
+        updateStickColor(x, y);
+
         if (isInitialized) {
             bassOsc.frequency.setTargetAtTime(40 + (x + 1) * 60, ctx.currentTime, 0.05);
-            bassFilter.frequency.setTargetAtTime(200 + (1-y) * 2000, ctx.currentTime, 0.05);
+            bassFilter.frequency.setTargetAtTime(200 + (1 - y) * 2000, ctx.currentTime, 0.05);
             bassGain.gain.setTargetAtTime(document.getElementById('bass_vol').value, ctx.currentTime, 0.05);
         }
-    });
-    joy.addEventListener('touchend', () => {
+    }
+
+    function handleJoyEnd() {
         stick.style.transform = `translate(0,0)`;
+        stick.style.background = 'var(--neon)';
+        stick.style.boxShadow = '0 0 15px var(--neon), 0 0 30px var(--neon)';
         if (isInitialized) bassGain.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
-    });
+    }
+
+    // Touch — must preventDefault on touchstart to claim the gesture from the browser
+    joy.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        handleJoyMove(touch.clientX, touch.clientY);
+    }, { passive: false });
+
+    joy.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        handleJoyMove(touch.clientX, touch.clientY);
+    }, { passive: false });
+
+    joy.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        handleJoyEnd();
+    }, { passive: false });
+
+    joy.addEventListener('touchcancel', (e) => {
+        e.preventDefault();
+        handleJoyEnd();
+    }, { passive: false });
+
+    // Mouse
+    let mouseDown = false;
+    joy.addEventListener('mousedown', () => { mouseDown = true; });
+    window.addEventListener('mousemove', (e) => { if (mouseDown) handleJoyMove(e.clientX, e.clientY); });
+    window.addEventListener('mouseup', () => { if (mouseDown) { mouseDown = false; handleJoyEnd(); } });
 </script>
+
 </body>
 </html>
