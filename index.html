@@ -174,55 +174,71 @@
 
     /* ── WAVEFORM EDITOR MODAL ── */
     .editor-modal {
-        display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95);
+        display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.97);
         z-index: 200; flex-direction: column; align-items: center; justify-content: center;
-        padding: 20px;
+        padding: 20px; gap: 16px;
     }
     .editor-modal.open { display: flex; }
-    .editor-title { font-size: 12px; letter-spacing: 2px; color: var(--purple); text-transform: uppercase; margin-bottom: 16px; }
+    .editor-title { font-size: 12px; letter-spacing: 2px; color: var(--purple); text-transform: uppercase; }
     .editor-canvas-wrap {
         width: 100%; max-width: 500px; position: relative;
         background: #0a0a14; border: 1px solid #2a2a3a; border-radius: 10px;
-        overflow: hidden; touch-action: none;
+        overflow: visible; touch-action: none; height: 110px;
     }
-    #waveCanvas { display: block; width: 100%; height: 100px; }
+    #waveCanvas { display: block; width: 100%; height: 110px; border-radius: 10px; position: absolute; top: 0; left: 0; }
+    /* Shaded cut regions */
+    .trim-shade-left, .trim-shade-right {
+        position: absolute; top: 0; height: 100%; background: rgba(0,0,0,0.65);
+        pointer-events: none; z-index: 1;
+    }
+    /* Big grab handles */
     .trim-handle {
-        position: absolute; top: 0; width: 4px; height: 100%;
-        background: var(--purple); cursor: ew-resize; touch-action: none;
-        box-shadow: 0 0 10px var(--purple);
+        position: absolute; top: -10px; height: calc(100% + 20px);
+        width: 6px; background: var(--purple); cursor: ew-resize; touch-action: none;
+        box-shadow: 0 0 14px var(--purple); z-index: 10;
     }
-    .trim-handle::after {
+    /* Fat touch-target tab */
+    .trim-handle::before {
         content: ''; position: absolute; top: 50%; left: 50%;
         transform: translate(-50%, -50%);
-        width: 16px; height: 32px; background: var(--purple);
-        border-radius: 4px; opacity: 0.9;
+        width: 44px; height: 64px; background: var(--purple);
+        border-radius: 10px; opacity: 0.92;
     }
-    .trim-shade-left, .trim-shade-right {
-        position: absolute; top: 0; height: 100%; background: rgba(0,0,0,0.6);
-        pointer-events: none;
+    /* Grip dots */
+    .trim-handle::after {
+        content: '⋮'; position: absolute; top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        color: white; font-size: 20px; z-index: 11; pointer-events: none;
     }
-    .editor-time-row { display: flex; justify-content: space-between; width: 100%; max-width: 500px; font-size: 9px; color: #555; margin-top: 6px; margin-bottom: 16px; padding: 0 2px; }
+    /* Big time numbers */
+    .editor-time-row {
+        display: flex; justify-content: space-between; align-items: center;
+        width: 100%; max-width: 500px;
+    }
+    .editor-time-box { text-align: center; }
+    .editor-time-big { font-size: 24px; font-weight: bold; color: var(--purple); font-family: 'Courier New', monospace; }
+    .editor-time-label { font-size: 9px; color: #555; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+    .editor-dur-box { text-align: center; }
+    .editor-dur-big { font-size: 30px; font-weight: bold; color: var(--neon); font-family: 'Courier New', monospace; }
+    .editor-dur-label { font-size: 9px; color: #555; letter-spacing: 1px; margin-top: 2px; }
+    /* Playing indicator */
+    .editor-playing-row { display: flex; align-items: center; gap: 8px; font-size: 10px; color: #555; letter-spacing: 1px; }
+    .editor-play-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff3860; animation: blink 0.8s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+    /* Buttons */
     .editor-btns { display: flex; gap: 10px; width: 100%; max-width: 500px; }
     .editor-btn {
-        flex: 1; padding: 12px; border-radius: 8px; border: 2px solid;
+        flex: 1; padding: 14px 8px; border-radius: 8px; border: 2px solid;
         font-family: 'Courier New', monospace; font-size: 11px; font-weight: bold;
         cursor: pointer; background: transparent; letter-spacing: 1px; transition: all 0.15s;
     }
-    .editor-btn.preview { border-color: var(--neon); color: var(--neon); }
-    .editor-btn.preview:active { background: var(--neon); color: black; }
-    .editor-btn.save    { border-color: var(--purple); color: var(--purple); }
-    .editor-btn.save:active { background: var(--purple); color: white; }
-    .editor-btn.redo    { border-color: #ff3860; color: #ff3860; }
-    .editor-btn.redo:active { background: #ff3860; color: black; }
+    .editor-btn.keep     { border-color: var(--neon);    color: var(--neon); }
+    .editor-btn.keep:active     { background: var(--neon); color: black; }
+    .editor-btn.redo     { border-color: #ff3860; color: #ff3860; }
+    .editor-btn.redo:active     { background: #ff3860; color: black; }
+    .editor-btn.close-ed { border-color: #444; color: #666; }
+    .editor-btn.close-ed:active { background: #333; color: white; }
 
-    /* keep-redo prompt */
-    .keep-redo {
-        display: none; flex-direction: column; align-items: center; gap: 12px;
-        width: 100%; max-width: 500px; margin-top: 10px;
-    }
-    .keep-redo.open { display: flex; }
-    .keep-redo-label { font-size: 11px; color: #aaa; letter-spacing: 1px; }
-    .keep-redo-btns { display: flex; gap: 10px; width: 100%; }
 
     /* ── DISCO BALL BUTTON ── */
     .disco-btn {
@@ -533,33 +549,39 @@
     </div>
 </div>
 
-<!-- WAVEFORM EDITOR MODAL -->
+<!-- WAVEFORM EDITOR MODAL — single screen, auto-plays, live drag -->
 
 <div class="editor-modal" id="editorModal">
-    <div class="editor-title">✂ Edit Loop</div>
+    <div class="editor-title">✂ TRIM LOOP</div>
     <div class="editor-canvas-wrap" id="editorWrap">
         <canvas id="waveCanvas"></canvas>
         <div class="trim-shade-left"  id="shadeLeft"></div>
         <div class="trim-shade-right" id="shadeRight"></div>
         <div class="trim-handle" id="handleLeft"  style="left:0"></div>
-        <div class="trim-handle" id="handleRight" style="right:0; left:auto"></div>
+        <div class="trim-handle" id="handleRight" style="left:calc(100% - 6px)"></div>
     </div>
     <div class="editor-time-row">
-        <span id="trimStartLabel">0.00s</span>
-        <span id="trimDurLabel">— duration —</span>
-        <span id="trimEndLabel">0.00s</span>
+        <div class="editor-time-box">
+            <div class="editor-time-big" id="trimStartLabel">0.00</div>
+            <div class="editor-time-label">START</div>
+        </div>
+        <div class="editor-dur-box">
+            <div class="editor-dur-big" id="trimDurLabel">0.00</div>
+            <div class="editor-dur-label">DURATION</div>
+        </div>
+        <div class="editor-time-box">
+            <div class="editor-time-big" id="trimEndLabel">0.00</div>
+            <div class="editor-time-label">END</div>
+        </div>
+    </div>
+    <div class="editor-playing-row">
+        <div class="editor-play-dot"></div>
+        <span id="editorPlayingLabel">drag handles · loop plays live</span>
     </div>
     <div class="editor-btns">
-        <button class="editor-btn preview" onclick="previewTrim()">▶ PREVIEW</button>
-        <button class="editor-btn save"    onclick="commitTrim()">SAVE TRIM</button>
-        <button class="editor-btn redo"    id="editorRedoBtn" style="display:none" onclick="redoTrim()">REDO</button>
-    </div>
-    <div class="keep-redo" id="keepRedoRow">
-        <span class="keep-redo-label">Happy with the trim?</span>
-        <div class="keep-redo-btns">
-            <button class="editor-btn save"  onclick="keepTrim()">✓ KEEP</button>
-            <button class="editor-btn redo"  onclick="redoTrim()">↺ REDO</button>
-        </div>
+        <button class="editor-btn redo"     onclick="redoTrim()">↺ RESET</button>
+        <button class="editor-btn keep"     onclick="keepTrim()">✓ KEEP TRIM</button>
+        <button class="editor-btn close-ed" onclick="closeEditor()">✕ CANCEL</button>
     </div>
 </div>
 
@@ -581,9 +603,8 @@ async function initAudio() {
     if (isInitialized) return;
     ctx = new (window.AudioContext || window.webkitAudioContext)();
 
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-    micIn      = ctx.createMediaStreamSource(micStream);
-    micGateGain = ctx.createGain(); micGateGain.gain.value = 0; // default OFF
+    // Build the vocal chain without mic — mic connected only when user turns it on
+    micGateGain = ctx.createGain(); micGateGain.gain.value = 0;
     vocalGain   = ctx.createGain();
     pitchNode   = createPitchShifter(ctx);
 
@@ -597,7 +618,7 @@ async function initAudio() {
     const verbGain = ctx.createGain(); verbGain.gain.value = 0;
     window._verbGain = verbGain;
 
-    micIn.connect(micGateGain);
+    // micIn will be wired in when mic turns on — chain is ready waiting
     micGateGain.connect(pitchNode.input);
     pitchNode.output.connect(vocalGain);
     vocalGain.connect(ctx.destination);
@@ -615,7 +636,6 @@ async function initAudio() {
 
     setupControls();
 
-    // UI: button turns purple
     const btn = document.getElementById('startBtn');
     btn.textContent = 'System On!!!';
     btn.classList.add('on');
@@ -624,9 +644,28 @@ async function initAudio() {
     isInitialized = true;
 }
 
-function toggleMic() {
+async function toggleMic() {
+    if (!isInitialized) return;
     micEnabled = !micEnabled;
-    if (micGateGain) micGateGain.gain.value = micEnabled ? 1 : 0;
+
+    if (micEnabled) {
+        // First time MIC ON — request permission and wire up stream
+        if (!micStream) {
+            try {
+                micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                micIn = ctx.createMediaStreamSource(micStream);
+                micIn.connect(micGateGain);
+            } catch(e) {
+                micEnabled = false;
+                alert('Microphone access denied.');
+                return;
+            }
+        }
+        micGateGain.gain.setTargetAtTime(1, ctx.currentTime, 0.05);
+    } else {
+        micGateGain.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+    }
+
     const btn = document.getElementById('micToggle');
     btn.className = 'mic-btn ' + (micEnabled ? 'on' : 'off');
 }
@@ -868,33 +907,81 @@ function updateLoopUI(ch) {
 //  WAVEFORM EDITOR
 // ═══════════════════════════════════════════════════
 let editorCh = null;
-let trimLeftPct  = 0;   // 0..1
+let trimLeftPct  = 0;
 let trimRightPct = 1;
-let previewAudio = null;
+let editorLoopAudio   = null;   // continuously looping audio in editor
+let editorLoopTimer   = null;
+let editorDrumTimers  = [];
 
 function openEditor(ch) {
     editorCh = ch;
     const lp = looper[ch];
-    const dur = lp.buffer.lengthMs / 1000;
-
-    // Reset trim to full
     trimLeftPct  = lp.buffer.trimStart / lp.buffer.lengthMs;
     trimRightPct = lp.buffer.trimEnd   / lp.buffer.lengthMs;
 
     document.getElementById('editorModal').classList.add('open');
-    document.getElementById('keepRedoRow').classList.remove('open');
-    document.getElementById('editorRedoBtn').style.display = 'none';
-
-    // Draw waveform after paint
-    setTimeout(() => drawWaveform(ch), 50);
-    updateTrimUI();
+    setTimeout(() => { drawWaveform(ch); updateTrimUI(); startEditorLoop(); }, 60);
 }
 
 function closeEditor() {
     document.getElementById('editorModal').classList.remove('open');
-    if (previewAudio) { previewAudio.pause(); previewAudio = null; }
-    stopLivePreview();
-    livePreviewAudio = null;
+    stopEditorLoop();
+}
+
+// ── Continuous loop playback inside the editor ───────────────────────────
+function startEditorLoop() {
+    stopEditorLoop();
+    scheduleEditorLoop();
+}
+
+function scheduleEditorLoop() {
+    const lp = looper[editorCh];
+    if (!lp || !lp.buffer) return;
+    const durMs   = lp.buffer.lengthMs;
+    const startMs = trimLeftPct  * durMs;
+    const endMs   = trimRightPct * durMs;
+    const lenMs   = Math.max(100, endMs - startMs);
+
+    // Voice
+    if (lp.voiceBlob) {
+        editorLoopAudio = new Audio(lp.voiceBlob);
+        editorLoopAudio.volume = 0.85;
+        editorLoopAudio.addEventListener('canplay', () => {
+            editorLoopAudio.currentTime = startMs / 1000;
+            editorLoopAudio.play().catch(() => {});
+        }, { once: true });
+        editorLoopAudio.load();
+    }
+
+    // Drums — replay events in trim window
+    const now = performance.now();
+    lp.buffer.events.forEach(ev => {
+        if (ev.t < startMs || ev.t >= endMs) return;
+        const delay = ev.t - startMs;
+        const tid = setTimeout(() => {
+            if (ev.kind === 'drum') playDrum(ev.type, true);
+        }, delay);
+        editorDrumTimers.push(tid);
+    });
+
+    // Schedule next loop
+    editorLoopTimer = setTimeout(() => {
+        stopEditorLoop();
+        scheduleEditorLoop();
+    }, lenMs);
+}
+
+function stopEditorLoop() {
+    clearTimeout(editorLoopTimer);
+    editorDrumTimers.forEach(t => clearTimeout(t));
+    editorDrumTimers = [];
+    if (editorLoopAudio) { editorLoopAudio.pause(); editorLoopAudio = null; }
+}
+
+// Called while dragging — restart loop from new trim position
+function restartEditorLoop() {
+    stopEditorLoop();
+    scheduleEditorLoop();
 }
 
 async function drawWaveform(ch) {
@@ -956,6 +1043,7 @@ function drawFallbackWave(ctx2, cw, ch2) {
 }
 
 function updateTrimUI() {
+    if (!editorCh) return;
     const lp  = looper[editorCh];
     const dur = lp.buffer.lengthMs / 1000;
     const wrap = document.getElementById('editorWrap');
@@ -964,22 +1052,23 @@ function updateTrimUI() {
     const leftPx  = trimLeftPct  * W;
     const rightPx = trimRightPct * W;
 
-    document.getElementById('handleLeft').style.left  = leftPx  + 'px';
-    document.getElementById('handleRight').style.left = (rightPx - 4) + 'px';
-    document.getElementById('shadeLeft').style.width  = leftPx  + 'px';
-    document.getElementById('shadeLeft').style.left   = '0px';
+    document.getElementById('handleLeft').style.left  = leftPx + 'px';
+    document.getElementById('handleRight').style.left = (rightPx - 6) + 'px';
+    document.getElementById('shadeLeft').style.width  = leftPx + 'px';
     document.getElementById('shadeRight').style.width = (W - rightPx) + 'px';
     document.getElementById('shadeRight').style.left  = rightPx + 'px';
 
     const tStart = trimLeftPct  * dur;
     const tEnd   = trimRightPct * dur;
-    document.getElementById('trimStartLabel').textContent = tStart.toFixed(2) + 's';
-    document.getElementById('trimEndLabel').textContent   = tEnd.toFixed(2)   + 's';
-    document.getElementById('trimDurLabel').textContent   = (tEnd - tStart).toFixed(2) + 's';
+    document.getElementById('trimStartLabel').textContent = tStart.toFixed(2);
+    document.getElementById('trimEndLabel').textContent   = tEnd.toFixed(2);
+    document.getElementById('trimDurLabel').textContent   = (tEnd - tStart).toFixed(2);
 }
 
-// Drag handles
+// ── Drag handles ─────────────────────────────────────────────────────────
 let dragging = null;
+let dragRestartTimer = null;
+
 function getEditorX(e) {
     const wrap = document.getElementById('editorWrap');
     const rect = wrap.getBoundingClientRect();
@@ -988,9 +1077,9 @@ function getEditorX(e) {
 }
 
 document.getElementById('handleLeft').addEventListener('touchstart',  e => { e.preventDefault(); dragging='left';  }, { passive:false });
-document.getElementById('handleLeft').addEventListener('mousedown',   e => { dragging='left'; });
+document.getElementById('handleLeft').addEventListener('mousedown',   () => { dragging='left'; });
 document.getElementById('handleRight').addEventListener('touchstart', e => { e.preventDefault(); dragging='right'; }, { passive:false });
-document.getElementById('handleRight').addEventListener('mousedown',  e => { dragging='right'; });
+document.getElementById('handleRight').addEventListener('mousedown',  () => { dragging='right'; });
 
 window.addEventListener('touchmove', e => {
     if (!dragging) return;
@@ -998,7 +1087,10 @@ window.addEventListener('touchmove', e => {
     const pct = getEditorX(e);
     if (dragging === 'left')  trimLeftPct  = Math.min(pct, trimRightPct - 0.02);
     if (dragging === 'right') trimRightPct = Math.max(pct, trimLeftPct  + 0.02);
-    updateTrimUI(true);
+    updateTrimUI();
+    // Debounce loop restart — don't restart on every pixel, wait 300ms after drag settles
+    clearTimeout(dragRestartTimer);
+    dragRestartTimer = setTimeout(() => restartEditorLoop(), 300);
 }, { passive: false });
 
 window.addEventListener('mousemove', e => {
@@ -1006,57 +1098,34 @@ window.addEventListener('mousemove', e => {
     const pct = getEditorX(e);
     if (dragging === 'left')  trimLeftPct  = Math.min(pct, trimRightPct - 0.02);
     if (dragging === 'right') trimRightPct = Math.max(pct, trimLeftPct  + 0.02);
-    updateTrimUI(true);
+    updateTrimUI();
+    clearTimeout(dragRestartTimer);
+    dragRestartTimer = setTimeout(() => restartEditorLoop(), 300);
 });
 
-window.addEventListener('touchend',  () => { if (dragging) { dragging = null; stopLivePreview(); } });
-window.addEventListener('mouseup',   () => { if (dragging) { dragging = null; stopLivePreview(); } });
+window.addEventListener('touchend',  () => { if (dragging) { dragging = null; } });
+window.addEventListener('mouseup',   () => { if (dragging) { dragging = null; } });
 
-function previewTrim() {
-    const lp  = looper[editorCh];
-    if (!lp.voiceBlob) return;
-    if (previewAudio) { previewAudio.pause(); previewAudio = null; }
-    const dur    = lp.buffer.lengthMs / 1000;
-    const start  = trimLeftPct  * dur;
-    const end    = trimRightPct * dur;
-    const audio  = new Audio(lp.voiceBlob);
-    previewAudio = audio;
-    audio.addEventListener('canplay', () => {
-        audio.currentTime = start;
-        audio.play().catch(()=>{});
-    }, { once: true });
-    setTimeout(() => { if (previewAudio) { previewAudio.pause(); previewAudio = null; } }, (end - start) * 1000);
-    audio.load();
-}
-
-function commitTrim() {
+function keepTrim() {
+    // Save trim positions into buffer
     const lp  = looper[editorCh];
     const dur = lp.buffer.lengthMs;
     lp.buffer.trimStart = trimLeftPct  * dur;
     lp.buffer.trimEnd   = trimRightPct * dur;
-
-    // Show keep/redo
-    document.getElementById('keepRedoRow').classList.add('open');
-    document.getElementById('editorRedoBtn').style.display = 'inline-block';
-
-    // Auto-play trimmed loop
-    loopPlay(editorCh);
-}
-
-function keepTrim() {
     closeEditor();
+    // Restart main loop playback with new trim
+    if (lp.state === 'playing') {
+        loopStop(editorCh);
+        loopPlay(editorCh);
+    }
 }
 
 function redoTrim() {
-    if (previewAudio) { previewAudio.pause(); previewAudio = null; }
-    loopStop(editorCh);
-    document.getElementById('keepRedoRow').classList.remove('open');
-    document.getElementById('editorRedoBtn').style.display = 'none';
-    // Reset trim handles
-    const lp = looper[editorCh];
+    // Reset handles to full recording
     trimLeftPct  = 0;
     trimRightPct = 1;
     updateTrimUI();
+    restartEditorLoop();
 }
 
 // ═══════════════════════════════════════════════════
