@@ -212,6 +212,158 @@
     .keep-redo.open { display: flex; }
     .keep-redo-label { font-size: 11px; color: #aaa; letter-spacing: 1px; }
     .keep-redo-btns { display: flex; gap: 10px; width: 100%; }
+
+    /* ── DISCO BALL BUTTON ── */
+    .disco-btn {
+        display: none; background: #1a1a2e; border: 2px solid #a78bfa;
+        border-radius: 8px; width: 40px; height: 40px; font-size: 20px;
+        cursor: pointer; align-items: center; justify-content: center;
+        transition: background 0.2s, box-shadow 0.2s;
+    }
+    .disco-btn.visible { display: flex; }
+    .disco-btn:active  { background: #a78bfa; box-shadow: 0 0 20px #a78bfa; }
+    .disco-btn.dancing { animation: disco-pulse 0.5s infinite alternate; }
+    @keyframes disco-pulse {
+        from { box-shadow: 0 0 10px #a78bfa; border-color: #a78bfa; }
+        to   { box-shadow: 0 0 30px #ff3860, 0 0 60px #00f2ff; border-color: #00f2ff; }
+    }
+
+    /* ── DANCE SETUP MODAL ── */
+    .dance-setup-modal {
+        display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92);
+        z-index: 300; align-items: center; justify-content: center; padding: 20px;
+    }
+    .dance-setup-modal.open { display: flex; }
+    .dance-setup-box {
+        background: #0d0d18; border: 1px solid #a78bfa; border-radius: 20px;
+        padding: 28px 22px; width: 90vw; max-width: 360px;
+        box-shadow: 0 0 60px rgba(167,139,250,0.25);
+    }
+    .dance-setup-title {
+        font-size: 22px; text-align: center; margin-bottom: 4px;
+    }
+    .dance-setup-sub {
+        font-size: 10px; letter-spacing: 2px; color: #a78bfa; text-align: center;
+        text-transform: uppercase; margin-bottom: 22px;
+    }
+    .dance-option-label {
+        font-size: 10px; color: #666; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;
+    }
+    .flash-style-row {
+        display: flex; gap: 8px; margin-bottom: 18px;
+    }
+    .flash-style-btn {
+        flex: 1; padding: 10px 4px; border-radius: 8px; border: 2px solid #333;
+        background: #151520; color: #666; font-family: 'Courier New', monospace;
+        font-size: 9px; cursor: pointer; text-align: center; transition: all 0.15s;
+        letter-spacing: 0.5px;
+    }
+    .flash-style-btn.selected { border-color: #a78bfa; color: #a78bfa; background: #1e1a2e; }
+    .torch-row {
+        display: flex; align-items: center; justify-content: space-between;
+        background: #151520; border-radius: 10px; padding: 12px 16px;
+        margin-bottom: 22px; border: 1px solid #222;
+    }
+    .torch-label { font-size: 11px; color: #aaa; }
+    .torch-label small { display: block; font-size: 9px; color: #555; margin-top: 2px; }
+    .toggle-switch {
+        width: 44px; height: 26px; background: #333; border-radius: 13px;
+        position: relative; cursor: pointer; transition: background 0.2s;
+    }
+    .toggle-switch.on { background: #a78bfa; }
+    .toggle-switch::after {
+        content: ''; position: absolute; width: 20px; height: 20px;
+        background: white; border-radius: 50%; top: 3px; left: 3px;
+        transition: left 0.2s;
+    }
+    .toggle-switch.on::after { left: 21px; }
+    .lets-go-btn {
+        width: 100%; padding: 16px; border-radius: 12px;
+        background: linear-gradient(135deg, #8b5cf6, #ec4899);
+        border: none; color: white; font-family: 'Courier New', monospace;
+        font-size: 16px; font-weight: bold; letter-spacing: 2px; cursor: pointer;
+        box-shadow: 0 0 30px rgba(139,92,246,0.5); transition: opacity 0.2s;
+        margin-bottom: 12px;
+    }
+    .lets-go-btn:active { opacity: 0.8; }
+    .dance-cancel-btn {
+        width: 100%; padding: 10px; background: transparent; border: 1px solid #333;
+        color: #555; font-family: 'Courier New', monospace; font-size: 11px;
+        border-radius: 8px; cursor: pointer;
+    }
+
+    /* ── DANCE MODE OVERLAY ── */
+    .dance-overlay {
+        display: none; position: fixed; inset: 0; z-index: 400;
+        flex-direction: column; align-items: center; justify-content: flex-end;
+        padding-bottom: 60px; overflow: hidden;
+    }
+    .dance-overlay.open { display: flex; }
+
+    /* colour flash layer */
+    #danceFlash {
+        position: absolute; inset: 0; pointer-events: none;
+        transition: background 0.05s;
+    }
+
+    /* disco ball visual */
+    .dance-ball-wrap {
+        position: absolute; top: 50%; left: 50%;
+        transform: translate(-50%, -60%);
+        pointer-events: none; z-index: 1;
+    }
+    .dance-ball {
+        font-size: 120px; line-height: 1;
+        filter: drop-shadow(0 0 40px rgba(167,139,250,0.8));
+        animation: ball-spin 3s linear infinite;
+    }
+    @keyframes ball-spin {
+        from { transform: rotate(0deg) scale(1); }
+        50%  { transform: rotate(180deg) scale(1.15); }
+        to   { transform: rotate(360deg) scale(1); }
+    }
+
+    /* tilt indicator */
+    .tilt-indicator {
+        position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+        font-size: 9px; letter-spacing: 2px; color: rgba(255,255,255,0.4);
+        text-transform: uppercase; z-index: 2;
+    }
+
+    /* slide-up exit handle */
+    .dance-close-handle {
+        position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+        z-index: 10; touch-action: none; cursor: grab;
+    }
+    .dance-close-circle {
+        width: 70px; height: 70px; border-radius: 50%;
+        border: 3px solid rgba(255,255,255,0.6);
+        background: rgba(0,0,0,0.5);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 2px; backdrop-filter: blur(4px);
+        box-shadow: 0 0 20px rgba(255,255,255,0.1);
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .dance-close-circle.near-target {
+        border-color: #00f2ff;
+        box-shadow: 0 0 30px #00f2ff;
+    }
+    .dance-close-arrow { font-size: 16px; color: rgba(255,255,255,0.8); }
+    .dance-close-text  { font-size: 7px; color: rgba(255,255,255,0.5); letter-spacing: 0.5px; text-align: center; line-height: 1.3; }
+
+    /* drop-zone target at top */
+    .dance-close-target {
+        position: absolute; top: 0; left: 0; right: 0; height: 80px;
+        background: linear-gradient(to bottom, rgba(0,242,255,0.15), transparent);
+        border-bottom: 1px solid rgba(0,242,255,0.2);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 5; pointer-events: none;
+    }
+    .dance-close-target-label {
+        font-size: 9px; letter-spacing: 2px; color: rgba(0,242,255,0.5);
+        text-transform: uppercase;
+    }
+
 </style>
 ```
 
@@ -221,6 +373,7 @@
 <div class="header">Beastie Bass V2</div>
 
 <div class="top-bar">
+    <button class="disco-btn" id="discoBtn" onclick="openDanceSetup()">🪩</button>
     <button class="btn-start" id="startBtn" onclick="initAudio()">START SYSTEM</button>
     <button class="cog-btn" id="cogBtn" onclick="openCog()">⚙️</button>
 </div>
@@ -302,6 +455,56 @@
         </div>
         <div class="otomatone-label">Otomatone</div>
     </div>
+</div>
+
+<!-- DISCO BALL BUTTON (left of start btn) injected via JS after init -->
+
+<!-- DANCE SETUP MODAL -->
+
+<div class="dance-setup-modal" id="danceSetupModal">
+  <div class="dance-setup-box">
+    <div class="dance-setup-title">🪩</div>
+    <div class="dance-setup-sub">Dance Mode Setup</div>
+
+```
+<div class="dance-option-label">Screen Flash Style</div>
+<div class="flash-style-row">
+  <button class="flash-style-btn selected" id="flashStrobe"  onclick="selectFlash('strobe')">⚡<br>STROBE</button>
+  <button class="flash-style-btn"          id="flashPulse"   onclick="selectFlash('pulse')">🌊<br>PULSE</button>
+  <button class="flash-style-btn"          id="flashWash"    onclick="selectFlash('wash')">🌈<br>WASH</button>
+</div>
+
+<div class="dance-option-label">Flashlight</div>
+<div class="torch-row">
+  <div class="torch-label">
+    Use Torch
+    <small>Flashes at random intervals<br>Requires camera permission</small>
+  </div>
+  <div class="toggle-switch" id="torchToggle" onclick="toggleTorchSetting()"></div>
+</div>
+
+<button class="lets-go-btn" onclick="launchDanceMode()">LET'S DANCE 🪩</button>
+<button class="dance-cancel-btn" onclick="closeDanceSetup()">CANCEL</button>
+```
+
+  </div>
+</div>
+
+<!-- DANCE MODE FULLSCREEN OVERLAY -->
+
+<div class="dance-overlay" id="danceOverlay">
+  <div id="danceFlash"></div>
+  <div class="dance-ball-wrap"><div class="dance-ball">🪩</div></div>
+  <div class="tilt-indicator" id="tiltIndicator">tilt to play</div>
+  <div class="dance-close-target">
+    <span class="dance-close-target-label">↑ release here to close ↑</span>
+  </div>
+  <div class="dance-close-handle" id="danceCloseHandle">
+    <div class="dance-close-circle" id="danceCloseCircle">
+      <span class="dance-close-arrow">↑</span>
+      <span class="dance-close-text">slide up<br>to close</span>
+    </div>
+  </div>
 </div>
 
 <!-- COG MODAL -->
@@ -408,6 +611,7 @@ async function initAudio() {
     btn.textContent = 'System On!!!';
     btn.classList.add('on');
     document.getElementById('cogBtn').classList.add('visible');
+    document.getElementById('discoBtn').classList.add('visible');
     isInitialized = true;
 }
 
@@ -1048,6 +1252,250 @@ document.querySelectorAll('input[type=range]').forEach(s=>{
     s.addEventListener('touchstart',e=>e.stopPropagation(),{passive:true});
     s.addEventListener('touchmove', e=>e.stopPropagation(),{passive:true});
 });
+
+// ═══════════════════════════════════════════════════
+//  DANCE MODE
+// ═══════════════════════════════════════════════════
+let danceActive     = false;
+let danceFlashStyle = 'strobe';
+let torchEnabled    = false;
+let torchStream     = null;
+let torchTrack      = null;
+let gyroGranted     = false;
+let danceRafId      = null;
+let torchIntervalId = null;
+
+// ── Setup modal ──
+function openDanceSetup() {
+    document.getElementById('danceSetupModal').classList.add('open');
+}
+function closeDanceSetup() {
+    document.getElementById('danceSetupModal').classList.remove('open');
+}
+function selectFlash(style) {
+    danceFlashStyle = style;
+    ['Strobe','Pulse','Wash'].forEach(s => {
+        document.getElementById('flash' + s.charAt(0).toUpperCase() + s.slice(1))
+            .classList.toggle('selected', s.toLowerCase() === style);
+    });
+}
+function toggleTorchSetting() {
+    torchEnabled = !torchEnabled;
+    document.getElementById('torchToggle').classList.toggle('on', torchEnabled);
+}
+
+// ── Launch ──
+async function launchDanceMode() {
+    closeDanceSetup();
+
+    // Request gyroscope permission (iOS 13+)
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+            const perm = await DeviceOrientationEvent.requestPermission();
+            if (perm !== 'granted') {
+                alert('Gyroscope permission denied. Dance mode needs motion access.');
+                return;
+            }
+            gyroGranted = true;
+        } catch(e) { gyroGranted = false; }
+    } else {
+        gyroGranted = true; // Android / desktop — no prompt needed
+    }
+
+    // Request torch if enabled
+    if (torchEnabled) {
+        try {
+            torchStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment', advanced: [{ torch: true }] }
+            });
+            torchTrack = torchStream.getVideoTracks()[0];
+            // Turn torch OFF initially — we'll fire it in intervals
+            await torchTrack.applyConstraints({ advanced: [{ torch: false }] });
+        } catch(e) {
+            torchEnabled = false;
+            torchTrack   = null;
+            alert('Flashlight not available on this device or browser.');
+        }
+    }
+
+    // Open overlay
+    danceActive = true;
+    document.getElementById('danceOverlay').classList.add('open');
+    document.getElementById('discoBtn').classList.add('dancing');
+    document.body.style.overflow = 'hidden';
+
+    // Start gyro listener
+    window.addEventListener('deviceorientation', onGyro, true);
+
+    // Start torch random firing
+    if (torchEnabled && torchTrack) {
+        scheduleTorchFlash();
+    }
+
+    // Animate dance overlay color
+    animateDanceFlash();
+
+    // Setup slide-to-close
+    initDanceCloseHandle();
+}
+
+// ── Gyro → Otomatone ──
+let lastBeta = 0, lastGamma = 0;
+function onGyro(e) {
+    if (!danceActive || !isInitialized) return;
+
+    // beta:  front-back tilt  -180..180 → Y axis (filter)
+    // gamma: left-right tilt  -90..90   → X axis (frequency)
+    const beta  = e.beta  || 0;   // forward/back
+    const gamma = e.gamma || 0;   // left/right
+
+    // Normalise to -1..1
+    const x = Math.max(-1, Math.min(1, gamma / 60));  // left-right
+    const y = Math.max(-1, Math.min(1, beta  / 60));  // forward-back
+
+    const vol = parseFloat(document.getElementById('bass_vol').value);
+
+    // Drive otomatone
+    bassOsc.frequency.setTargetAtTime(40  + (x + 1) * 60,      ctx.currentTime, 0.03);
+    bassFilter.frequency.setTargetAtTime(200 + (1 - y) * 2000, ctx.currentTime, 0.03);
+
+    // Volume = how much phone is moving (delta)
+    const motion = Math.min(1, (Math.abs(beta - lastBeta) + Math.abs(gamma - lastGamma)) / 15);
+    bassGain.gain.setTargetAtTime(vol * (0.3 + motion * 0.7), ctx.currentTime, 0.05);
+
+    lastBeta  = beta;
+    lastGamma = gamma;
+
+    // Update tilt indicator
+    document.getElementById('tiltIndicator').textContent =
+        `β ${beta.toFixed(0)}° γ ${gamma.toFixed(0)}°`;
+}
+
+// ── Screen flash animation ──
+const FLASH_COLORS = [
+    '#ff3860','#00f2ff','#8b5cf6','#f59e0b','#10b981',
+    '#ec4899','#3b82f6','#f97316','#a78bfa','#34d399'
+];
+let flashColorIdx = 0, lastFlash = 0;
+
+function animateDanceFlash() {
+    if (!danceActive) return;
+    danceRafId = requestAnimationFrame(animateDanceFlash);
+    const now  = performance.now();
+    const el   = document.getElementById('danceFlash');
+    const motion = Math.min(1, (Math.abs(lastBeta) + Math.abs(lastGamma)) / 120);
+
+    if (danceFlashStyle === 'strobe') {
+        // Fast random colour flashes
+        if (now - lastFlash > (60 + Math.random() * 120)) {
+            flashColorIdx = (flashColorIdx + 1) % FLASH_COLORS.length;
+            el.style.background = FLASH_COLORS[flashColorIdx] + '55';
+            lastFlash = now;
+        }
+    } else if (danceFlashStyle === 'pulse') {
+        // Pulses with motion speed
+        const alpha = (0.1 + motion * 0.6).toFixed(2);
+        const col   = FLASH_COLORS[Math.floor(now / 400) % FLASH_COLORS.length];
+        el.style.background = col + Math.round(alpha * 255).toString(16).padStart(2,'0');
+    } else {
+        // Slow colour wash
+        const hue = (now / 40) % 360;
+        el.style.background = `hsla(${hue}, 80%, 40%, 0.35)`;
+    }
+}
+
+// ── Torch flash ──
+async function scheduleTorchFlash() {
+    if (!danceActive || !torchTrack) return;
+    const delay = 400 + Math.random() * 1200;
+    torchIntervalId = setTimeout(async () => {
+        try {
+            await torchTrack.applyConstraints({ advanced: [{ torch: true }] });
+            setTimeout(async () => {
+                try { await torchTrack.applyConstraints({ advanced: [{ torch: false }] }); } catch(e){}
+            }, 80 + Math.random() * 120);
+        } catch(e){}
+        scheduleTorchFlash();
+    }, delay);
+}
+
+// ── Slide-to-close ──
+function initDanceCloseHandle() {
+    const handle = document.getElementById('danceCloseHandle');
+    const circle = document.getElementById('danceCloseCircle');
+    let dragging  = false;
+    let startY    = 0;
+    let currentY  = 0;
+    const screenH = window.innerHeight;
+
+    function onStart(e) {
+        dragging = true;
+        startY   = e.touches ? e.touches[0].clientY : e.clientY;
+        currentY = startY;
+        handle.style.transition = 'none';
+    }
+    function onMove(e) {
+        if (!dragging) return;
+        e.preventDefault();
+        currentY = e.touches ? e.touches[0].clientY : e.clientY;
+        const dy = startY - currentY; // positive = moved up
+        const clamped = Math.max(0, Math.min(screenH - 80, dy));
+        handle.style.bottom = (30 + clamped) + 'px';
+        // Glow when near target
+        const nearTop = (currentY < 100);
+        circle.classList.toggle('near-target', nearTop);
+    }
+    function onEnd(e) {
+        if (!dragging) return;
+        dragging = false;
+        if (currentY < 100) {
+            // Reached target — close
+            exitDanceMode();
+        } else {
+            // Snap back
+            handle.style.transition = 'bottom 0.3s ease';
+            handle.style.bottom = '30px';
+            circle.classList.remove('near-target');
+        }
+    }
+
+    handle.addEventListener('touchstart',  onStart, { passive: false });
+    handle.addEventListener('touchmove',   onMove,  { passive: false });
+    handle.addEventListener('touchend',    onEnd,   { passive: false });
+    handle.addEventListener('mousedown',   onStart);
+    window.addEventListener('mousemove',   onMove);
+    window.addEventListener('mouseup',     onEnd);
+}
+
+function exitDanceMode() {
+    danceActive = false;
+    window.removeEventListener('deviceorientation', onGyro, true);
+    cancelAnimationFrame(danceRafId);
+    clearTimeout(torchIntervalId);
+
+    // Kill torch
+    if (torchTrack) {
+        try { torchTrack.applyConstraints({ advanced: [{ torch: false }] }); } catch(e){}
+        torchTrack  = null;
+    }
+    if (torchStream) {
+        torchStream.getTracks().forEach(t => t.stop());
+        torchStream = null;
+    }
+
+    // Reset otomatone
+    if (isInitialized) bassGain.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
+
+    // Reset overlay
+    document.getElementById('danceFlash').style.background = 'transparent';
+    document.getElementById('danceOverlay').classList.remove('open');
+    document.getElementById('discoBtn').classList.remove('dancing');
+    document.getElementById('danceCloseHandle').style.bottom = '30px';
+    document.getElementById('danceCloseCircle').classList.remove('near-target');
+    document.body.style.overflow = '';
+}
+
 </script>
 
 </body>
