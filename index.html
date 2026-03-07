@@ -129,7 +129,7 @@
 
     /* ── BOTTOM ── */
     .bottom-section { display: flex; width: 90%; justify-content: space-around; align-items: flex-end; padding-bottom: 10px; margin-top: 6px; }
-    .otomatone-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .otomatone-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
     .otomatone-label { font-size: 9px; letter-spacing: 2px; color: #888; text-transform: uppercase; }
     .joy-mode-toggle {
         display: flex; align-items: center; border: 1px solid #333;
@@ -151,6 +151,23 @@
         box-shadow: 0 0 15px var(--neon), 0 0 30px var(--neon); transition: box-shadow 0.1s;
     }
     .bass-slider-box { width: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .oto-side-btns {
+        display: flex; flex-direction: column; align-items: center;
+        justify-content: space-around; gap: 16px;
+    }
+    .oto-side-btn {
+        width: 54px; height: 54px; border-radius: 50%; border: 3px solid #444;
+        background: #1a1a1e; color: #888; font-family: 'Courier New', monospace;
+        font-size: 8px; font-weight: bold; cursor: pointer; letter-spacing: 0.5px;
+        display: flex; flex-direction: column; align-items: center;
+        justify-content: center; gap: 2px; transition: all 0.15s;
+        touch-action: none; box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+    }
+    .oto-side-btn span { font-size: 18px; line-height: 1; }
+    .oto-side-btn.mute-btn { border-color: #ff3860; color: #ff3860; }
+    .oto-side-btn.mute-btn.muted { background: #ff3860; color: black; box-shadow: 0 0 18px #ff3860; }
+    .oto-side-btn.wah-btn  { border-color: var(--purple); color: var(--purple); }
+    .oto-side-btn.wah-btn.active  { background: var(--purple); color: white; box-shadow: 0 0 18px var(--purple); }
 
     /* ── COG MODAL ── */
     .modal-overlay {
@@ -483,14 +500,28 @@
         <label style="font-size:10px">BASS</label>
         <input type="range" class="vert" id="bass_vol" min="0" max="1" step="0.1" value="0.5">
     </div>
+    <div class="oto-side-btns">
+        <button class="oto-side-btn mute-btn" id="otoMuteBtn"
+            ontouchstart="otoMuteStart(event)" ontouchend="otoMuteEnd(event)"
+            ontouchcancel="otoMuteEnd(event)"
+            onmousedown="otoMuteStart(event)" onmouseup="otoMuteEnd(event)">
+            <span>🔇</span>MUTE
+        </button>
+        <button class="oto-side-btn wah-btn" id="otoWahBtn"
+            ontouchstart="otoWahStart(event)" ontouchend="otoWahStop(event)"
+            ontouchcancel="otoWahStop(event)"
+            onmousedown="otoWahStart(event)" onmouseup="otoWahStop(event)">
+            <span>〰️</span>WAH
+        </button>
+    </div>
     <div class="otomatone-wrap">
         <div class="joystick-container" id="joy_container">
             <div class="stick" id="stick"></div>
         </div>
         <div class="otomatone-label">Otomatone</div>
         <div class="joy-mode-toggle">
-            <button class="joy-mode-btn active" id="joyFreeBtn" onclick="setJoyMode('free')">FREE</button>
-            <button class="joy-mode-btn"        id="joySnapBtn" onclick="setJoyMode('snap')">SNAP</button>
+            <button class="joy-mode-btn"        id="joyFreeBtn" onclick="setJoyMode('free')">FREE</button>
+            <button class="joy-mode-btn active" id="joySnapBtn" onclick="setJoyMode('snap')">SNAP</button>
         </div>
     </div>
 </div>
@@ -1377,7 +1408,7 @@ function handleJoyMove(clientX, clientY) {
         loopCapture({ kind:'oto', x, y, vol });
     }
 }
-let joyMode = 'free'; // 'free' or 'snap'
+let joyMode = 'snap'; // 'free' or 'snap'
 function setJoyMode(mode) {
     joyMode = mode;
     document.getElementById('joyFreeBtn').classList.toggle('active', mode === 'free');
@@ -1394,6 +1425,64 @@ function handleJoyEnd() {
         }
     }
     // Free mode: stick stays put, sound holds, no oto_end recorded
+}
+
+// ── OTO MUTE (momentary silence while held) ──────────────────────
+let otoMuted = false;
+function otoMuteStart(e) {
+    e.preventDefault();
+    otoMuted = true;
+    document.getElementById('otoMuteBtn').classList.add('muted');
+    if (isInitialized) bassGain.gain.setTargetAtTime(0, ctx.currentTime, 0.02);
+}
+function otoMuteEnd(e) {
+    e.preventDefault();
+    otoMuted = false;
+    document.getElementById('otoMuteBtn').classList.remove('muted');
+    // Restore volume only if not in snap mode at center (where gain is already 0)
+    if (isInitialized && joyMode === 'free') {
+        const vol = parseFloat(document.getElementById('bass_vol').value);
+        bassGain.gain.setTargetAtTime(vol, ctx.currentTime, 0.02);
+    }
+}
+
+// ── OTO WAH (LFO tremolo on bassGain while held) ─────────────────
+let wahRafId = null;
+let wahActive = false;
+let wahPhase  = 0;
+function otoWahStart(e) {
+    e.preventDefault();
+    if (wahActive) return;
+    wahActive = true;
+    document.getElementById('otoWahBtn').classList.add('active');
+    wahPhase = 0;
+    function wahTick() {
+        if (!wahActive || !isInitialized) return;
+        wahPhase += 0.12; // wah speed
+        const vol = parseFloat(document.getElementById('bass_vol').value);
+        // Oscillate gain between 0 and full vol — wah wah effect
+        const g = vol * 0.5 * (1 + Math.sin(wahPhase));
+        bassGain.gain.setTargetAtTime(otoMuted ? 0 : g, ctx.currentTime, 0.01);
+        // Also sweep filter for extra wah character
+        const filterBase = bassFilter.frequency.value;
+        bassFilter.frequency.setTargetAtTime(
+            200 + 1800 * (0.5 + 0.5 * Math.sin(wahPhase * 0.7)),
+            ctx.currentTime, 0.02
+        );
+        wahRafId = requestAnimationFrame(wahTick);
+    }
+    wahRafId = requestAnimationFrame(wahTick);
+}
+function otoWahStop(e) {
+    e.preventDefault();
+    wahActive = false;
+    cancelAnimationFrame(wahRafId);
+    document.getElementById('otoWahBtn').classList.remove('active');
+    // Restore gain
+    if (isInitialized && !otoMuted) {
+        const vol = parseFloat(document.getElementById('bass_vol').value);
+        bassGain.gain.setTargetAtTime(joyMode === 'free' ? vol : 0, ctx.currentTime, 0.05);
+    }
 }
 
 const joy   = document.getElementById('joy_container');
