@@ -1549,12 +1549,8 @@ window.addEventListener('mouseup',  ()=>{if(mouseDown){mouseDown=false;handleJoy
 let lastTap=0;
 document.addEventListener('touchstart', e => {
     const now = Date.now();
-    if (now - lastTap < 350) { e.preventDefault(); e.stopPropagation(); }
+    if (now - lastTap < 350) e.preventDefault();
     lastTap = now;
-}, { passive: false });
-document.addEventListener('touchend', e => {
-    const now = Date.now();
-    if (now - lastTap < 350 && e.target.tagName !== 'INPUT') e.preventDefault();
 }, { passive: false });
 document.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('selectstart', e=>e.preventDefault());
