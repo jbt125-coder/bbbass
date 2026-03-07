@@ -20,7 +20,8 @@
 ```
     /* ── TOP BAR ── */
     .top-bar {
-        display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+        display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+        width: 90%; justify-content: center; flex-wrap: nowrap;
     }
     .btn-start {
         background: var(--neon); border: none; padding: 10px 22px; font-weight: bold;
@@ -33,12 +34,12 @@
         box-shadow: 0 0 18px var(--purple), 0 0 40px #6d28d9;
     }
     .cog-btn {
-        visibility: hidden; background: #1a1a2e; border: 2px solid var(--purple);
+        background: #1a1a2e; border: 2px solid var(--purple);
         color: var(--purple); border-radius: 8px; width: 40px; height: 40px;
         font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
         transition: background 0.2s;
     }
-    .cog-btn.visible { visibility: visible; }
+    .cog-btn.visible { }
     .cog-btn:active { background: var(--purple); color: white; }
 
     /* ── SLIDERS ── */
@@ -64,7 +65,7 @@
     }
 
     /* ── MIC TOGGLE ── */
-    .mic-toggle-row { width: 90%; display: flex; justify-content: flex-end; margin-bottom: 6px; }
+    .mic-toggle-row { display: none; }
     .mic-btn {
         background: #1a1a1e; border: 2px solid var(--neon); color: var(--neon);
         font-family: 'Courier New', monospace; font-size: 11px; font-weight: bold;
@@ -215,12 +216,12 @@
 
     /* ── DISCO BALL BUTTON ── */
     .disco-btn {
-        visibility: hidden; background: #1a1a2e; border: 2px solid #a78bfa;
+        background: #1a1a2e; border: 2px solid #a78bfa;
         border-radius: 8px; width: 40px; height: 40px; font-size: 20px;
         cursor: pointer; display: flex; align-items: center; justify-content: center;
         transition: background 0.2s, box-shadow 0.2s;
     }
-    .disco-btn.visible { visibility: visible; }
+    .disco-btn.visible { }
     .disco-btn:active  { background: #a78bfa; box-shadow: 0 0 20px #a78bfa; }
     .disco-btn.dancing { animation: disco-pulse 0.5s infinite alternate; }
     @keyframes disco-pulse {
@@ -375,6 +376,7 @@
 <div class="top-bar">
     <button class="disco-btn" id="discoBtn" onclick="openDanceSetup()">🪩</button>
     <button class="btn-start" id="startBtn" onclick="initAudio()">START SYSTEM</button>
+    <button class="mic-btn off" id="micToggle" onclick="toggleMic()"></button>
     <button class="cog-btn" id="cogBtn" onclick="openCog()">⚙️</button>
 </div>
 
@@ -395,10 +397,6 @@
         <label>CHORAL</label>
         <input type="range" class="vert" id="v_verb" min="0" max="0.9" step="0.05" value="0">
     </div>
-</div>
-
-<div class="mic-toggle-row">
-    <button class="mic-btn on" id="micToggle" onclick="toggleMic()"></button>
 </div>
 
 <div class="drum-grid">
@@ -560,7 +558,7 @@
 let ctx, micStream, micIn, micGateGain, vocalGain, echoNode, echoFeedback, verbNode, pitchNode;
 let bassOsc, bassFilter, bassGain;
 let isInitialized = false;
-let micEnabled    = true;
+let micEnabled    = false;
 
 function getPitchSemitones() {
     // slider 0=bottom=deep, 36=top=high → semitones -18..+18
@@ -573,7 +571,7 @@ async function initAudio() {
 
     micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     micIn      = ctx.createMediaStreamSource(micStream);
-    micGateGain = ctx.createGain(); micGateGain.gain.value = 1;
+    micGateGain = ctx.createGain(); micGateGain.gain.value = 0; // default OFF
     vocalGain   = ctx.createGain();
     pitchNode   = createPitchShifter(ctx);
 
