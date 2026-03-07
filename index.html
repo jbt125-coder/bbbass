@@ -125,10 +125,19 @@
     .loop-btn.edit        { border-color: var(--purple); color: var(--purple); font-size: 9px; padding: 6px 8px; }
     @keyframes pulse-rec { 0%,100% { box-shadow: 0 0 8px #ff3860; } 50% { box-shadow: 0 0 20px #ff3860, 0 0 40px #ff3860; } }
 
-    .ch-progress { width: 100%; height: 4px; background: #222; border-radius: 2px; margin-top: 6px; overflow: hidden; }
-    .ch-progress-bar { height: 100%; width: 0%; border-radius: 2px; transition: none; }
+    .ch-progress { width: 100%; height: 10px; background: #111; border-radius: 3px; margin-top: 6px; position: relative; overflow: visible; }
+    /* fill behind the head */
+    .ch-progress-bar { height: 100%; width: 0%; border-radius: 3px 0 0 3px; transition: none; opacity: 0.25; }
     .ch1 .ch-progress-bar { background: #ff3860; }
     .ch2 .ch-progress-bar { background: var(--neon); }
+    /* glowing playhead needle */
+    .ch-playhead {
+        position: absolute; top: -3px; bottom: -3px; width: 3px;
+        border-radius: 2px; left: 0%; transform: translateX(-50%);
+        pointer-events: none; transition: none;
+    }
+    .ch1 .ch-playhead { background: #ff3860; box-shadow: 0 0 8px #ff3860, 0 0 16px #ff3860; }
+    .ch2 .ch-playhead { background: var(--neon); box-shadow: 0 0 8px var(--neon), 0 0 16px var(--neon); }
     .ch-timer { font-size: 9px; color: #555; min-width: 28px; text-align: right; }
 
     /* ── BOTTOM ── */
@@ -230,6 +239,12 @@
         overflow: visible; touch-action: none; height: 110px;
     }
     #waveCanvas { display: block; width: 100%; height: 110px; border-radius: 10px; position: absolute; top: 0; left: 0; }
+    #editorPlayhead {
+        position: absolute; top: 0; bottom: 0; width: 2px;
+        background: white; box-shadow: 0 0 8px white, 0 0 16px rgba(255,255,255,0.5);
+        pointer-events: none; z-index: 5; left: 0%; transform: translateX(-50%);
+        border-radius: 1px;
+    }
     /* Shaded cut regions */
     .trim-shade-left, .trim-shade-right {
         position: absolute; top: 0; height: 100%; background: rgba(0,0,0,0.65);
@@ -493,7 +508,7 @@
                 </div>
                 <span class="ch-timer" id="ch1-timer">0:00</span>
             </div>
-            <div class="ch-progress"><div class="ch-progress-bar" id="ch1-bar"></div></div>
+            <div class="ch-progress"><div class="ch-progress-bar" id="ch1-bar"></div><div class="ch-playhead" id="ch1-head"></div></div>
         </div>
         <!-- CH 2 -->
         <div>
@@ -507,7 +522,7 @@
                 </div>
                 <span class="ch-timer" id="ch2-timer">0:00</span>
             </div>
-            <div class="ch-progress"><div class="ch-progress-bar" id="ch2-bar"></div></div>
+            <div class="ch-progress"><div class="ch-progress-bar" id="ch2-bar"></div><div class="ch-playhead" id="ch2-head"></div></div>
         </div>
     </div>
 </div>
@@ -628,6 +643,7 @@
     <div class="editor-title">✂ TRIM LOOP</div>
     <div class="editor-canvas-wrap" id="editorWrap">
         <canvas id="waveCanvas"></canvas>
+        <div id="editorPlayhead"></div>
         <div class="trim-shade-left"  id="shadeLeft"></div>
         <div class="trim-shade-right" id="shadeRight"></div>
         <div class="trim-handle" id="handleLeft"  style="left:0"></div>
@@ -875,7 +891,8 @@ function loopStopRec(ch) {
 
     clearInterval(lp.timerInterval);
     cancelAnimationFrame(lp.rafId);
-    document.getElementById(`ch${ch}-bar`).style.width = '0%';
+    document.getElementById(`ch${ch}-bar`).style.width  = '0%';
+    document.getElementById(`ch${ch}-head`).style.left   = '0%';
 
     const lengthMs = performance.now() - lp.recStart;
 
@@ -974,13 +991,17 @@ function scheduleLoop(ch) {
 }
 
 function animatePlayBar(ch, lengthMs) {
-    const lp  = looper[ch];
-    const bar = document.getElementById(`ch${ch}-bar`);
+    const lp   = looper[ch];
+    const bar  = document.getElementById(`ch${ch}-bar`);
+    const head = document.getElementById(`ch${ch}-head`);
     const start = performance.now();
     cancelAnimationFrame(lp.rafId);
     function tick(now) {
-        const pct = Math.min(((now-start)/lengthMs)*100, 100);
-        bar.style.width = pct + '%';
+        const pct = Math.min(((now - start) / lengthMs) * 100, 100);
+        bar.style.width  = pct + '%';
+        head.style.left  = pct + '%';
+        // Also update editor playhead if this channel is open in the editor
+        if (editorCh === ch) updateEditorPlayhead(pct / 100);
         if (pct < 100 && lp.state === 'playing') lp.rafId = requestAnimationFrame(tick);
     }
     lp.rafId = requestAnimationFrame(tick);
@@ -998,7 +1019,8 @@ function loopStop(ch) {
     if (isInitialized && loopGain[ch]) loopGain[ch].gain.setTargetAtTime(0, ctx.currentTime, 0.05);
     lp.state = lp.buffer ? 'recorded' : 'idle';
     updateLoopUI(ch);
-    document.getElementById(`ch${ch}-bar`).style.width = '0%';
+    document.getElementById(`ch${ch}-bar`).style.width  = '0%';
+    document.getElementById(`ch${ch}-head`).style.left   = '0%';
 }
 
 function updateLoopUI(ch) {
@@ -1032,6 +1054,8 @@ function openEditor(ch) {
 function closeEditor() {
     document.getElementById('editorModal').classList.remove('open');
     stopEditorLoop();
+    const ph = document.getElementById('editorPlayhead');
+    if (ph) ph.style.left = '0%';
 }
 
 // ── Continuous loop playback inside the editor ───────────────────────────
@@ -1047,6 +1071,15 @@ function scheduleEditorLoop() {
     const startMs = trimLeftPct  * durMs;
     const endMs   = trimRightPct * durMs;
     const lenMs   = Math.max(100, endMs - startMs);
+    // Animate editor playhead across the trim window
+    const edStart = performance.now();
+    function tickEditorHead(now) {
+        if (!editorCh) return;
+        const pct = Math.min((now - edStart) / lenMs, 1);
+        updateEditorPlayhead(trimLeftPct + pct * (trimRightPct - trimLeftPct));
+        if (pct < 1) requestAnimationFrame(tickEditorHead);
+    }
+    requestAnimationFrame(tickEditorHead);
 
     // Voice
     if (lp.voiceBlob) {
@@ -1146,6 +1179,22 @@ function drawFallbackWave(ctx2, cw, ch2) {
         ctx2.lineTo(x, y);
     }
     ctx2.stroke();
+}
+
+function updateEditorPlayhead(frac) {
+    // frac = 0..1 position within the full recording
+    // We want to show position within the trim window only
+    if (!editorCh) return;
+    const ph = document.getElementById('editorPlayhead');
+    if (!ph) return;
+    // Map frac (within full loop) to position within trim window
+    const span = trimRightPct - trimLeftPct;
+    if (span <= 0) return;
+    const relFrac = (frac - trimLeftPct) / span;
+    const clipped = Math.max(0, Math.min(1, relFrac));
+    const wrap = document.getElementById('editorWrap');
+    const W = wrap ? wrap.clientWidth : 300;
+    ph.style.left = (clipped * W) + 'px';
 }
 
 function updateTrimUI() {
