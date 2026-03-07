@@ -131,13 +131,23 @@
     .bottom-section { display: flex; width: 90%; justify-content: space-around; align-items: flex-end; padding-bottom: 10px; margin-top: 6px; }
     .otomatone-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
     .otomatone-label { font-size: 9px; letter-spacing: 2px; color: #888; text-transform: uppercase; }
+    .joy-mode-toggle {
+        display: flex; align-items: center; border: 1px solid #333;
+        border-radius: 20px; overflow: hidden; margin-top: 2px;
+    }
+    .joy-mode-btn {
+        font-family: 'Courier New', monospace; font-size: 9px; font-weight: bold;
+        padding: 4px 10px; border: none; background: transparent;
+        color: #555; cursor: pointer; letter-spacing: 1px; transition: all 0.15s;
+    }
+    .joy-mode-btn.active { background: var(--purple); color: white; }
     .joystick-container {
-        width: 140px; height: 140px; background: #111; border: 2px solid #444;
+        width: 169px; height: 169px; background: #111; border: 2px solid #444;
         border-radius: 50%; position: relative; touch-action: none; user-select: none;
     }
     .stick {
         width: 50px; height: 50px; background: var(--neon); border-radius: 50%;
-        position: absolute; top: 45px; left: 45px;
+        position: absolute; top: 59px; left: 59px;
         box-shadow: 0 0 15px var(--neon), 0 0 30px var(--neon); transition: box-shadow 0.1s;
     }
     .bass-slider-box { width: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -478,6 +488,10 @@
             <div class="stick" id="stick"></div>
         </div>
         <div class="otomatone-label">Otomatone</div>
+        <div class="joy-mode-toggle">
+            <button class="joy-mode-btn active" id="joyFreeBtn" onclick="setJoyMode('free')">FREE</button>
+            <button class="joy-mode-btn"        id="joySnapBtn" onclick="setJoyMode('snap')">SNAP</button>
+        </div>
     </div>
 </div>
 
@@ -591,6 +605,8 @@
 // ═══════════════════════════════════════════════════
 let ctx, micStream, micIn, micGateGain, vocalGain, echoNode, echoFeedback, verbNode, pitchNode;
 let bassOsc, bassFilter, bassGain;
+// Per-channel looper playback oscillators — completely separate from live joystick nodes
+let loopOsc = {}, loopFilter = {}, loopGain = {};
 let isInitialized = false;
 let micEnabled    = false;
 
@@ -633,6 +649,17 @@ async function initAudio() {
     bassGain   = ctx.createGain(); bassGain.gain.value = 0;
     bassOsc.connect(bassFilter); bassFilter.connect(bassGain); bassGain.connect(ctx.destination);
     bassOsc.start();
+
+    // Dedicated looper playback oscillators — one per channel, never shared with live joystick
+    [1, 2].forEach(ch => {
+        loopOsc[ch]    = ctx.createOscillator(); loopOsc[ch].type = 'sawtooth';
+        loopFilter[ch] = ctx.createBiquadFilter();
+        loopGain[ch]   = ctx.createGain(); loopGain[ch].gain.value = 0;
+        loopOsc[ch].connect(loopFilter[ch]);
+        loopFilter[ch].connect(loopGain[ch]);
+        loopGain[ch].connect(ctx.destination);
+        loopOsc[ch].start();
+    });
 
     setupControls();
 
@@ -854,11 +881,11 @@ function scheduleLoop(ch) {
                 if (lp.state !== 'playing') return;
                 if (ev.kind === 'drum') playDrum(ev.type);
                 else if (ev.kind === 'oto') {
-                    bassOsc.frequency.setTargetAtTime(40+(ev.x+1)*60, ctx.currentTime, 0.05);
-                    bassFilter.frequency.setTargetAtTime(200+(1-ev.y)*2000, ctx.currentTime, 0.05);
-                    bassGain.gain.setTargetAtTime(ev.vol, ctx.currentTime, 0.05);
+                    loopOsc[ch].frequency.setTargetAtTime(40+(ev.x+1)*60, ctx.currentTime, 0.05);
+                    loopFilter[ch].frequency.setTargetAtTime(200+(1-ev.y)*2000, ctx.currentTime, 0.05);
+                    loopGain[ch].gain.setTargetAtTime(ev.vol, ctx.currentTime, 0.05);
                 } else if (ev.kind === 'oto_end') {
-                    bassGain.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
+                    loopGain[ch].gain.setTargetAtTime(0, ctx.currentTime, 0.1);
                 }
             }, ev.t - trimStart)
         ) - 1];
@@ -889,7 +916,7 @@ function loopStop(ch) {
     lp.timers.forEach(t => clearTimeout(t)); lp.timers = [];
     if (lp.voiceMediaRecorder && lp.voiceMediaRecorder.state !== 'inactive') lp.voiceMediaRecorder.stop();
     if (lp.voiceAudio) { lp.voiceAudio.pause(); lp.voiceAudio = null; }
-    if (isInitialized) bassGain.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
+    if (isInitialized && loopGain[ch]) loopGain[ch].gain.setTargetAtTime(0, ctx.currentTime, 0.05);
     lp.state = lp.buffer ? 'recorded' : 'idle';
     updateLoopUI(ch);
     document.getElementById(`ch${ch}-bar`).style.width = '0%';
@@ -1350,14 +1377,23 @@ function handleJoyMove(clientX, clientY) {
         loopCapture({ kind:'oto', x, y, vol });
     }
 }
+let joyMode = 'free'; // 'free' or 'snap'
+function setJoyMode(mode) {
+    joyMode = mode;
+    document.getElementById('joyFreeBtn').classList.toggle('active', mode === 'free');
+    document.getElementById('joySnapBtn').classList.toggle('active', mode === 'snap');
+}
 function handleJoyEnd() {
-    stick.style.transform = 'translate(0,0)';
-    stick.style.background = 'var(--neon)';
-    stick.style.boxShadow  = '0 0 15px var(--neon), 0 0 30px var(--neon)';
-    if (isInitialized) {
-        bassGain.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
-        loopCapture({ kind:'oto_end' });
+    if (joyMode === 'snap') {
+        stick.style.transform = 'translate(0,0)';
+        stick.style.background = 'var(--neon)';
+        stick.style.boxShadow  = '0 0 15px var(--neon), 0 0 30px var(--neon)';
+        if (isInitialized) {
+            bassGain.gain.setTargetAtTime(0, ctx.currentTime, 0.1);
+            loopCapture({ kind:'oto_end' });
+        }
     }
+    // Free mode: stick stays put, sound holds, no oto_end recorded
 }
 
 const joy   = document.getElementById('joy_container');
