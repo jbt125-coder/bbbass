@@ -128,18 +128,19 @@
     @keyframes pulse-rec { 0%,100% { box-shadow: 0 0 8px #ff3860; } 50% { box-shadow: 0 0 20px #ff3860, 0 0 40px #ff3860; } }
 
     .ch-progress { width: 100%; height: 10px; background: #111; border-radius: 3px; margin-top: 6px; position: relative; overflow: visible; }
-    /* fill behind the head */
     .ch-progress-bar { height: 100%; width: 0%; border-radius: 3px 0 0 3px; transition: none; opacity: 0.25; }
-    .ch1 .ch-progress-bar { background: #ff3860; }
-    .ch2 .ch-progress-bar { background: var(--neon); }
-    /* glowing playhead needle */
     .ch-playhead {
         position: absolute; top: -3px; bottom: -3px; width: 3px;
         border-radius: 2px; left: 0%; transform: translateX(-50%);
         pointer-events: none; transition: none;
     }
-    #ch1-head { background: #ff3860; box-shadow: 0 0 8px #ff3860, 0 0 16px #ff3860; }
-    #ch2-head { background: var(--neon); box-shadow: 0 0 8px var(--neon), 0 0 16px var(--neon); }
+    .add-channel-btn {
+        width: 100%; padding: 10px; border: 1px dashed #333; border-radius: 8px;
+        background: transparent; color: #444; font-family: 'Courier New', monospace;
+        font-size: 11px; letter-spacing: 1px; cursor: pointer; margin-top: 4px;
+        transition: all 0.2s;
+    }
+    .add-channel-btn:active { border-color: var(--neon); color: var(--neon); }
     .ch-timer { font-size: 9px; color: #555; min-width: 28px; text-align: right; }
 
     /* ── BOTTOM ── */
@@ -582,38 +583,7 @@
 
 <div class="looper-section">
     <div class="looper-title">⟳ Looper</div>
-    <div class="looper-channels">
-        <!-- CH 1 -->
-        <div>
-            <div class="looper-channel ch1">
-                <span class="ch-label">CH 1</span>
-                <div class="ch-btns">
-                    <button class="loop-btn rec"  id="ch1-rec"  onclick="loopRec(1)">REC</button>
-                    <button class="loop-btn stop" id="ch1-stop" onclick="loopStopRec(1)">STOP</button>
-                    <button class="loop-btn play" id="ch1-play" onclick="loopPlay(1)">PLAY</button>
-                    <button class="loop-btn edit" id="ch1-edit" onclick="openEditor(1)" style="display:none">✂ EDIT</button>
-                    <button class="loop-btn del"  id="ch1-del"  onclick="loopDelete(1)" style="display:none">✕</button>
-                </div>
-                <span class="ch-timer" id="ch1-timer">0:00</span>
-            </div>
-            <div class="ch-progress"><div class="ch-progress-bar" id="ch1-bar"></div><div class="ch-playhead" id="ch1-head"></div></div>
-        </div>
-        <!-- CH 2 -->
-        <div>
-            <div class="looper-channel ch2">
-                <span class="ch-label">CH 2</span>
-                <div class="ch-btns">
-                    <button class="loop-btn rec"  id="ch2-rec"  onclick="loopRec(2)">REC</button>
-                    <button class="loop-btn stop" id="ch2-stop" onclick="loopStopRec(2)">STOP</button>
-                    <button class="loop-btn play" id="ch2-play" onclick="loopPlay(2)">PLAY</button>
-                    <button class="loop-btn edit" id="ch2-edit" onclick="openEditor(2)" style="display:none">✂ EDIT</button>
-                    <button class="loop-btn del"  id="ch2-del"  onclick="loopDelete(2)" style="display:none">✕</button>
-                </div>
-                <span class="ch-timer" id="ch2-timer">0:00</span>
-            </div>
-            <div class="ch-progress"><div class="ch-progress-bar" id="ch2-bar"></div><div class="ch-playhead" id="ch2-head"></div></div>
-        </div>
-    </div>
+    <div class="looper-channels" id="looperChannels"></div>
 </div>
 
 <div class="bottom-section">
@@ -709,18 +679,11 @@
     <div class="modal-box">
         <div class="modal-title">⚙ Settings</div>
         <div class="modal-section-label">Save Loop as Audio</div>
-        <div class="save-ch-row">
-            <div class="save-ch-btn" id="saveCh1Btn" onclick="saveLoop(1)">
-                CH 1<br><span class="ch-status" id="saveCh1Status">No recording</span>
-            </div>
-            <div class="save-ch-btn" id="saveCh2Btn" onclick="saveLoop(2)">
-                CH 2<br><span class="ch-status" id="saveCh2Status">No recording</span>
-            </div>
-        </div>
-        <div class="modal-section-label">Merge Loops</div>
-        <button class="merge-btn" id="mergeBtn" onclick="mergeLoops()">
-            ★ MAKE CH2 THE MASTER → CH1
-            <span class="merge-sub" id="mergeStatus">Record both channels first</span>
+        <div id="cogSaveList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;max-height:180px;overflow-y:auto;"></div>
+        <div class="modal-section-label">Flatten</div>
+        <button class="merge-btn" id="mergeBtn" onclick="flattenAll()">
+            ★ FLATTEN ALL CHANNELS → CH1
+            <span class="merge-sub" id="mergeStatus">Record at least 2 channels first</span>
         </button>
         <button class="modal-close" onclick="closeCog()">CLOSE</button>
     </div>
@@ -792,14 +755,7 @@
 </div>
 
 <!-- DRUM TRACK REMOVAL -->
-<div class="editor-drum-row" id="drumRemoveRow">
-    <button class="editor-drum-btn" id="removeDrum1Btn" onclick="removeDrumTrack(1)">
-        🥁 REMOVE CH1 DRUMS
-    </button>
-    <button class="editor-drum-btn" id="removeDrum2Btn" onclick="removeDrumTrack(2)">
-        🥁 REMOVE CH2 DRUMS
-    </button>
-</div>
+<div class="editor-drum-row" id="drumRemoveRow" style="display:none"></div>
 
 <!-- UNDO / REDO -->
 <div class="editor-undo-row">
@@ -868,16 +824,10 @@ async function initAudio() {
     bassOsc.connect(bassFilter); bassFilter.connect(bassGain); bassGain.connect(ctx.destination);
     bassOsc.start();
 
-    // Dedicated looper playback oscillators — one per channel, never shared with live joystick
-    [1, 2].forEach(ch => {
-        loopOsc[ch]    = ctx.createOscillator(); loopOsc[ch].type = 'sawtooth';
-        loopFilter[ch] = ctx.createBiquadFilter();
-        loopGain[ch]   = ctx.createGain(); loopGain[ch].gain.value = 0;
-        loopOsc[ch].connect(loopFilter[ch]);
-        loopFilter[ch].connect(loopGain[ch]);
-        loopGain[ch].connect(ctx.destination);
-        loopOsc[ch].start();
-    });
+    // Oscillators created per-channel via initChannelOsc() when channels are created
+    // Init CH1 and CH2 upfront since they exist at start
+    initChannelOsc(1);
+    initChannelOsc(2);
 
     setupControls();
 
@@ -960,19 +910,99 @@ function playDrum(type, fromLoop) {
 }
 
 // ═══════════════════════════════════════════════════
-//  LOOPER
+//  LOOPER — dynamic unlimited channels
 // ═══════════════════════════════════════════════════
-const looper = {
-    1: { state:'idle', events:[], buffer:null, timers:[], rafId:null, loopTimeout:null,
-         voiceChunks:[], voiceMediaRecorder:null, voiceBlob:null, voiceAudio:null,
-         recStart:0, timerInterval:null, seedLoopLen:null },
-    2: { state:'idle', events:[], buffer:null, timers:[], rafId:null, loopTimeout:null,
-         voiceChunks:[], voiceMediaRecorder:null, voiceBlob:null, voiceAudio:null,
-         recStart:0, timerInterval:null, seedLoopLen:null }
-};
+
+// Channel colors — cycles through palette
+const CH_COLORS = [
+    '#ff3860', // ch1 red
+    '#00f2ff', // ch2 cyan
+    '#a78bfa', // ch3 purple
+    '#f59e0b', // ch4 amber
+    '#10b981', // ch5 green
+    '#ec4899', // ch6 pink
+    '#3b82f6', // ch7 blue
+    '#f97316', // ch8 orange
+];
+function chColor(ch) { return CH_COLORS[(ch - 1) % CH_COLORS.length]; }
+
+const looper = {};   // keyed by channel number (1-based)
+let nextCh = 1;      // next channel number to create
+
+function makeLooperChannel(ch) {
+    return { state:'idle', events:[], buffer:null, timers:[], rafId:null,
+             loopTimeout:null, voiceChunks:[], voiceMediaRecorder:null,
+             voiceBlob:null, voiceAudio:null, recStart:0,
+             timerInterval:null, seedLoopLen:null };
+}
+
+function createChannel() {
+    const ch = nextCh++;
+    looper[ch] = makeLooperChannel(ch);
+    // Create dedicated oscillator for this channel
+    if (isInitialized) initChannelOsc(ch);
+    renderLooperUI();
+    return ch;
+}
+
+function initChannelOsc(ch) {
+    if (loopOsc[ch]) return;  // already exists
+    loopOsc[ch]    = ctx.createOscillator(); loopOsc[ch].type = 'sawtooth';
+    loopFilter[ch] = ctx.createBiquadFilter();
+    loopFilter[ch].type            = 'lowpass';
+    loopFilter[ch].frequency.value = 200;
+    loopFilter[ch].Q.value         = 1.0;
+    loopOsc[ch].frequency.value    = 100;
+    loopGain[ch]   = ctx.createGain(); loopGain[ch].gain.value = 0;
+    loopOsc[ch].connect(loopFilter[ch]);
+    loopFilter[ch].connect(loopGain[ch]);
+    loopGain[ch].connect(ctx.destination);
+    loopOsc[ch].start();
+}
+
+function renderLooperUI() {
+    const container = document.getElementById('looperChannels');
+    container.innerHTML = '';
+    const channels = Object.keys(looper).map(Number).sort((a,b) => a-b);
+    channels.forEach(ch => {
+        const color = chColor(ch);
+        const lp = looper[ch];
+        const div = document.createElement('div');
+        div.id = `ch-wrap-${ch}`;
+        div.innerHTML = `
+            <div class="looper-channel" id="ch-row-${ch}" style="border-color:${color}22">
+                <span class="ch-label" style="color:${color}">CH${ch}</span>
+                <div class="ch-btns">
+                    <button class="loop-btn rec"  id="ch${ch}-rec"  onclick="loopRec(${ch})">REC</button>
+                    <button class="loop-btn stop" id="ch${ch}-stop" onclick="loopStopRec(${ch})">STOP</button>
+                    <button class="loop-btn play" id="ch${ch}-play" onclick="loopPlay(${ch})">PLAY</button>
+                    <button class="loop-btn edit" id="ch${ch}-edit" onclick="openEditor(${ch})" style="display:none">✂</button>
+                    <button class="loop-btn del"  id="ch${ch}-del"  onclick="loopDelete(${ch})" style="display:none">✕</button>
+                </div>
+                <span class="ch-timer" id="ch${ch}-timer">0:00</span>
+            </div>
+            <div class="ch-progress">
+                <div class="ch-progress-bar" id="ch${ch}-bar" style="background:${color}"></div>
+                <div class="ch-playhead"     id="ch${ch}-head" style="background:${color};box-shadow:0 0 8px ${color},0 0 16px ${color}"></div>
+            </div>`;
+        container.appendChild(div);
+        updateLoopUI(ch);
+    });
+    // Add channel button — only shown when highest channel has a recording
+    const lastCh = channels[channels.length - 1];
+    const lastHasBuffer = looper[lastCh] && looper[lastCh].buffer;
+    const btn = document.createElement('button');
+    btn.className = 'add-channel-btn';
+    btn.textContent = '+ ADD CHANNEL';
+    btn.onclick = () => createChannel();
+    btn.style.display = lastHasBuffer ? '' : 'none';
+    btn.id = 'addChBtn';
+    container.appendChild(btn);
+}
 
 function loopCapture(event) {
-    [1,2].forEach(ch => {
+    Object.keys(looper).forEach(ch => {
+        ch = Number(ch);
         const lp = looper[ch];
         if (lp.state === 'recording') lp.events.push({
             ...event,
@@ -995,26 +1025,27 @@ function loopRec(ch) {
     if (lp.state === 'recording') return;
     if (lp.state === 'playing') loopStop(ch);
 
-    // If recording CH2 and CH1 has a master loop — seed CH2 with CH1's events
-    // and auto-start CH1 playing so you can hear everything while you overdub
-    const otherCh = ch === 2 ? 1 : 2;
-    const otherLp = looper[otherCh];
-    if (ch === 2 && otherLp.buffer) {
-        // Copy CH1's full event list into CH2 as the foundation
-        // Tag them srcCh:1 so they route to loopOsc[1] on playback
-        // Seed with CH1 events — only ONE copy at t=0, tiling happens at STOP time
-        // Preserve drumLayer:1 so editor removal works correctly
-        lp.events = otherLp.buffer.events.map(ev => ({
-            ...ev,
-            srcCh: 1,
-            drumLayer: ev.kind === 'drum' ? 1 : undefined
-        }));
-        // Store CH1's loop length so tiling uses the right interval at stop time
-        lp.seedLoopLen = otherLp.buffer.lengthMs;
-        // Start CH1 playing in the background if not already
-        if (otherLp.state !== 'playing') loopPlay(otherCh);
+    // Collect all channels below this one that have recordings
+    const prevChs = Object.keys(looper).map(Number).sort((a,b)=>a-b).filter(c => c < ch && looper[c].buffer);
+
+    if (prevChs.length > 0) {
+        // Seed with events from ALL previous channels, tagged with their srcCh
+        // Each will be tiled separately to fill recording length at STOP time
+        lp.events = [];
+        prevChs.forEach(prevCh => {
+            const prevBuf = looper[prevCh].buffer;
+            prevBuf.events.forEach(ev => {
+                lp.events.push({ ...ev, srcCh: prevCh, drumLayer: ev.kind === 'drum' ? (ev.drumLayer || prevCh) : undefined });
+            });
+        });
+        // Store seeding info: map of srcCh -> loopLen for tiling
+        lp.seedInfo = {};
+        prevChs.forEach(prevCh => { lp.seedInfo[prevCh] = looper[prevCh].buffer.lengthMs; });
+        // Start all previous channels playing if not already
+        prevChs.forEach(prevCh => { if (looper[prevCh].state !== 'playing') loopPlay(prevCh); });
     } else {
         lp.events = [];
+        lp.seedInfo = null;
     }
 
     lp.voiceChunks = []; lp.state = 'recording';
@@ -1056,9 +1087,13 @@ function animateRecBar(ch) {
 
 function loopStopRec(ch) {
     if (!isInitialized) return;
-    // If CH2 was overdubbing over CH1, stop CH1 when recording ends
-    if (ch === 2 && looper[1].state === 'playing') loopStop(1);
     const lp = looper[ch];
+    // Stop all previous channels that were playing along
+    if (lp.seedInfo) {
+        Object.keys(lp.seedInfo).forEach(prevCh => {
+            if (looper[Number(prevCh)] && looper[Number(prevCh)].state === 'playing') loopStop(Number(prevCh));
+        });
+    }
     if (lp.state !== 'recording') { loopStop(ch); return; }
 
     clearInterval(lp.timerInterval);
@@ -1074,27 +1109,30 @@ function loopStopRec(ch) {
             const mime = getSupportedMimeType();
             lp.voiceBlob = URL.createObjectURL(new Blob(lp.voiceChunks, { type: mime || 'audio/webm' }));
         }
-        // If CH2 was seeded from CH1, tile the seeded events to fill the full recording length
-        // so CH1's Otomatone plays throughout every loop repetition, not just the first
+        // Tile each seeded srcCh independently using its own loop length
         let finalEvents = [...lp.events];
-        if (ch === 2 && lp.seedLoopLen) {
-            const ch1Len = lp.seedLoopLen;   // use stored length, not current CH1 buffer (may have changed)
-            lp.seedLoopLen = null;            // clear for next recording
-            const seeded = lp.events.filter(ev => ev.srcCh === 1);
-            const live   = lp.events.filter(ev => ev.srcCh !== 1);
-            // Tile seeded CH1 events across full recording length
+        if (lp.seedInfo) {
+            const seedInfo = lp.seedInfo;
+            lp.seedInfo = null;
+            const live = lp.events.filter(ev => ev.srcCh === ch);
             const tiled = [];
-            for (let offset = 0; offset < lengthMs; offset += ch1Len) {
-                seeded.forEach(ev => {
-                    const t = ev.t + offset;
-                    if (t < lengthMs) tiled.push({ ...ev, t, drumLayer: ev.kind === 'drum' ? 1 : undefined });
-                });
-            }
+            Object.keys(seedInfo).forEach(srcCh => {
+                srcCh = Number(srcCh);
+                const srcLen = seedInfo[srcCh];
+                const seeded = lp.events.filter(ev => ev.srcCh === srcCh);
+                for (let offset = 0; offset < lengthMs; offset += srcLen) {
+                    seeded.forEach(ev => {
+                        const t = ev.t + offset;
+                        if (t < lengthMs) tiled.push({ ...ev, t });
+                    });
+                }
+            });
             finalEvents = [...tiled, ...live].sort((a, b) => a.t - b.t);
         }
         lp.buffer = { events: finalEvents, lengthMs, trimStart: 0, trimEnd: lengthMs };
         lp.state  = 'recorded';
         updateLoopUI(ch);
+        renderLooperUI();   // update add-channel button visibility
         // Auto-open waveform editor
         openEditor(ch);
     };
@@ -1213,8 +1251,10 @@ function loopStop(ch) {
     if (isInitialized && loopGain[ch]) loopGain[ch].gain.setTargetAtTime(0, ctx.currentTime, 0.05);
     lp.state = lp.buffer ? 'recorded' : 'idle';
     updateLoopUI(ch);
-    document.getElementById(`ch${ch}-bar`).style.width  = '0%';
-    document.getElementById(`ch${ch}-head`).style.left   = '0%';
+    const bar  = document.getElementById(`ch${ch}-bar`);
+    const head = document.getElementById(`ch${ch}-head`);
+    if (bar)  bar.style.width = '0%';
+    if (head) head.style.left = '0%';
 }
 
 function loopDelete(ch) {
@@ -1224,18 +1264,22 @@ function loopDelete(ch) {
     lp.voiceBlob = null;
     lp.events    = [];
     lp.state     = 'idle';
-    delete origSnapshots[ch];  // clear so next recording gets a fresh original
-    document.getElementById(`ch${ch}-timer`).textContent = '0:00';
-    updateLoopUI(ch);
+    delete origSnapshots[ch];
+    renderLooperUI();  // re-render all channels + add-button visibility
 }
 
 function updateLoopUI(ch) {
     const lp = looper[ch];
-    document.getElementById(`ch${ch}-rec`).classList.toggle('active',  lp.state === 'recording');
-    document.getElementById(`ch${ch}-play`).classList.toggle('active', lp.state === 'playing');
+    if (!lp) return;
+    const rec  = document.getElementById(`ch${ch}-rec`);
+    const play = document.getElementById(`ch${ch}-play`);
+    const edit = document.getElementById(`ch${ch}-edit`);
+    const del  = document.getElementById(`ch${ch}-del`);
+    if (rec)  rec.classList.toggle('active',  lp.state === 'recording');
+    if (play) play.classList.toggle('active', lp.state === 'playing');
     const show = lp.buffer ? 'inline-block' : 'none';
-    document.getElementById(`ch${ch}-edit`).style.display = show;
-    document.getElementById(`ch${ch}-del`).style.display  = show;
+    if (edit) edit.style.display = show;
+    if (del)  del.style.display  = show;
 }
 
 // ═══════════════════════════════════════════════════
@@ -1373,7 +1417,7 @@ function removeDrumTrack(srcCh) {
     const ch = editorCh;
     if (!ch || !looper[ch].buffer) return;
     const btn = document.getElementById(`removeDrum${srcCh}Btn`);
-    if (btn.classList.contains('removed')) return;
+    if (!btn || btn.classList.contains('removed')) return;
 
     // Push undo before destructive change
     pushUndo(snapshotBuffer(looper[ch]));
@@ -1397,26 +1441,31 @@ function removeDrumTrack(srcCh) {
 }
 
 function updateDrumRemoveButtons() {
-    // Show/hide CH1 and CH2 drum buttons based on whether those srcCh drums exist
     if (!editorCh || !looper[editorCh].buffer) return;
     const events = looper[editorCh].buffer.events;
-    [1, 2].forEach(srcCh => {
-        const hasDrums = events.some(ev =>
-            ev.kind === 'drum' && ((ev.drumLayer !== undefined ? ev.drumLayer : (ev.srcCh || editorCh)) === srcCh)
-        );
-        const btn = document.getElementById(`removeDrum${srcCh}Btn`);
-        if (!btn) return;
-        btn.style.display = hasDrums ? '' : 'none';
-        btn.classList.remove('removed');
-        btn.innerHTML = `🥁 REMOVE CH${srcCh} DRUMS`;
-    });
-    // Hide the whole row if no drum buttons are visible
     const row = document.getElementById('drumRemoveRow');
-    const anyVisible = [1,2].some(s => {
-        const b = document.getElementById(`removeDrum${s}Btn`);
-        return b && b.style.display !== 'none';
+    if (!row) return;
+    row.innerHTML = '';  // rebuild dynamically
+
+    // Find all unique drum layers present in this buffer
+    const layers = new Set();
+    events.forEach(ev => {
+        if (ev.kind === 'drum') {
+            const layer = ev.drumLayer !== undefined ? ev.drumLayer : (ev.srcCh || editorCh);
+            layers.add(layer);
+        }
     });
-    if (row) row.style.display = anyVisible ? '' : 'none';
+
+    if (layers.size === 0) { row.style.display = 'none'; return; }
+    row.style.display = '';
+    layers.forEach(srcCh => {
+        const btn = document.createElement('button');
+        btn.className = 'editor-drum-btn';
+        btn.id = `removeDrum${srcCh}Btn`;
+        btn.innerHTML = `🥁 REMOVE CH${srcCh} DRUMS`;
+        btn.onclick = () => removeDrumTrack(srcCh);
+        row.appendChild(btn);
+    });
 }
 
 function setTargetLength() {
@@ -1948,92 +1997,91 @@ function redoTrim() {
 // ═══════════════════════════════════════════════════
 //  COG MODAL
 // ═══════════════════════════════════════════════════
-function mergeLoops() {
+function flattenAll() {
+    const channels = Object.keys(looper).map(Number).sort((a,b)=>a-b);
+    const withBuf = channels.filter(ch => looper[ch].buffer);
+    if (withBuf.length < 2) return;
+
+    // Stop all channels
+    channels.forEach(ch => loopStop(ch));
+
+    // Find longest channel length to use as master length
+    const masterLen = Math.max(...withBuf.map(ch => looper[ch].buffer.lengthMs));
+
+    // Tile all events from all channels into CH1, each with srcCh tag preserved
+    const allEvents = [];
+    withBuf.forEach(ch => {
+        const buf = looper[ch].buffer;
+        const loopLen = buf.lengthMs;
+        for (let offset = 0; offset < masterLen; offset += loopLen) {
+            buf.events.forEach(ev => {
+                const t = ev.t + offset;
+                if (t < masterLen) allEvents.push({ ...ev, srcCh: ch, drumLayer: ev.kind === 'drum' ? (ev.drumLayer || ch) : undefined, t });
+            });
+        }
+    });
+    allEvents.sort((a,b) => a.t - b.t);
+
+    // Put everything into CH1
     const lp1 = looper[1];
-    const lp2 = looper[2];
-    if (!lp2.buffer) return;  // only CH2 is required
-
-    loopStop(1); loopStop(2);
-
-    // CH2 is the master — its length is the loop length
-    // CH1 events layer underneath, everything kept as-is (no deduplication)
-    const mergedLen = lp2.buffer.lengthMs;
-
-    // Fully wipe CH1 first
-    lp1.buffer    = null;
-    lp1.voiceBlob = null;
-    lp1.events    = [];
-    lp1.voiceAudio = null;
-    delete origSnapshots[1];
-    document.getElementById('ch1-bar').style.width = '0%';
-    document.getElementById('ch1-head').style.left = '0%';
-    document.getElementById('ch1-timer').textContent = '0:00';
-
-    // Copy CH2 straight into CH1 as the new master
-    const mergedEvents = JSON.parse(JSON.stringify(lp2.buffer.events)).map(ev => ({
-        ...ev,
-        srcCh: 1,
-        drumLayer: ev.kind === 'drum' ? (ev.drumLayer || ev.srcCh || 2) : undefined
-    }));
-    lp1.buffer = {
-        events:     mergedEvents,
-        lengthMs:   mergedLen,
-        trimStart:  0,
-        trimEnd:    mergedLen,
-        voiceBlob2: null
-    };
-    lp1.voiceBlob = lp2.voiceBlob;
+    lp1.voiceBlob = looper[withBuf[0]].voiceBlob;  // use lowest ch voice as primary
+    lp1.buffer = { events: allEvents, lengthMs: masterLen, trimStart: 0, trimEnd: masterLen };
     lp1.state = 'recorded';
     delete origSnapshots[1];
-    updateLoopUI(1);
 
-    // Clear CH2 — free for next overdub
-    lp2.buffer    = null;
-    lp2.voiceBlob = null;
-    lp2.events    = [];
-    lp2.state     = 'idle';
-    lp2.voiceAudio = null;
-    delete origSnapshots[2];
-    document.getElementById('ch2-bar').style.width = '0%';
-    document.getElementById('ch2-head').style.left = '0%';
-    document.getElementById('ch2-timer').textContent = '0:00';
-    updateLoopUI(2);
+    // Reset CH1 oscillator
+    if (loopGain[1])   loopGain[1].gain.setTargetAtTime(0, ctx.currentTime, 0.01);
+    if (loopFilter[1]) loopFilter[1].frequency.setTargetAtTime(200, ctx.currentTime, 0.01);
+    if (loopOsc[1])    loopOsc[1].frequency.setTargetAtTime(100, ctx.currentTime, 0.01);
 
+    // Wipe all channels above CH1 and remove them
+    channels.filter(ch => ch > 1).forEach(ch => {
+        loopStop(ch);
+        delete looper[ch];
+        delete origSnapshots[ch];
+    });
+    nextCh = 2;  // reset so next add starts at CH2
+
+    renderLooperUI();
     closeCog();
 
-    // Flash confirmation
     const btn = document.getElementById('mergeBtn');
-    btn.innerHTML = '✓ CH2 IS NOW MASTER IN CH1!<span class="merge-sub"></span>';
-    setTimeout(() => { btn.innerHTML = '★ MAKE CH2 THE MASTER → CH1<span class="merge-sub">Record both channels first</span>'; }, 2000);
+    btn.innerHTML = '✓ FLATTENED INTO CH1!<span class="merge-sub" id="mergeStatus"></span>';
+    setTimeout(() => {
+        btn.innerHTML = '★ FLATTEN ALL CHANNELS → CH1<span class="merge-sub" id="mergeStatus">Record at least 2 channels first</span>';
+    }, 2500);
 }
 
 function openCog() {
     try {
-    // Update save button states
-    [1,2].forEach(ch => {
-        const lp  = looper[ch];
-        const btn = document.getElementById(`saveCh${ch}Btn`);
-        const st  = document.getElementById(`saveCh${ch}Status`);
-        if (lp.buffer) {
-            btn.classList.add('has-recording');
-            const dur = ((lp.buffer.trimEnd - lp.buffer.trimStart) / 1000).toFixed(1);
-            st.textContent = `${dur}s recorded`;
-        } else {
-            btn.classList.remove('has-recording');
-            st.textContent = 'No recording';
-        }
-    });
-    // Update merge button state — only active when BOTH channels have recordings
-    const both = !!looper[2].buffer;  // only need CH2
-    const mb = document.getElementById('mergeBtn');
-    const ms = document.getElementById('mergeStatus');
-    mb.classList.toggle('ready', !!both);
-    mb.disabled = !both;
-    ms.textContent = both
-        ? 'CH2 becomes master · CH1 layers under · CH2 freed'
-        : 'Record both channels first';
+        // Build dynamic save list
+        const saveList = document.getElementById('cogSaveList');
+        saveList.innerHTML = '';
+        const channels = Object.keys(looper).map(Number).sort((a,b)=>a-b);
+        channels.forEach(ch => {
+            const lp = looper[ch];
+            const color = chColor(ch);
+            const btn = document.createElement('div');
+            btn.className = 'save-ch-btn' + (lp.buffer ? ' has-recording' : '');
+            btn.style.borderColor = lp.buffer ? color : '#333';
+            const dur = lp.buffer ? ((lp.buffer.trimEnd - lp.buffer.trimStart) / 1000).toFixed(1) + 's' : 'No recording';
+            btn.innerHTML = `<span style="color:${color}">CH ${ch}</span><br><span class="ch-status">${dur}</span>`;
+            if (lp.buffer) btn.onclick = () => saveLoop(ch);
+            saveList.appendChild(btn);
+        });
 
-    document.getElementById('cogModal').classList.add('open');
+        // Flatten button — active when 2+ channels have recordings
+        const withBuf = channels.filter(ch => looper[ch].buffer);
+        const canFlatten = withBuf.length >= 2;
+        const mb = document.getElementById('mergeBtn');
+        const ms = document.getElementById('mergeStatus');
+        mb.classList.toggle('ready', canFlatten);
+        mb.disabled = !canFlatten;
+        if (ms) ms.textContent = canFlatten
+            ? `Flatten ${withBuf.length} channels into CH1`
+            : 'Record at least 2 channels first';
+
+        document.getElementById('cogModal').classList.add('open');
     } catch(e) {
         console.error('openCog error:', e);
         document.getElementById('cogModal').classList.add('open');
@@ -2382,6 +2430,12 @@ document.addEventListener('touchstart', function bootOnTouch() {
     initAudio();
     document.removeEventListener('touchstart', bootOnTouch);
 }, { passive: true, once: true });
+
+// Create initial channels and render looper UI immediately
+looper[1] = makeLooperChannel(1);
+looper[2] = makeLooperChannel(2);
+nextCh = 3;
+renderLooperUI();
 document.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('selectstart', e=>e.preventDefault());
 document.querySelectorAll('input[type=range]').forEach(s=>{
