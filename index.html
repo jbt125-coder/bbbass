@@ -1820,44 +1820,64 @@ function initChannelOsc(ch) {
     loopOsc[ch].start();
 }
 
+function buildChannelRow(ch) {
+    const color = chColor(ch);
+    const div = document.createElement('div');
+    div.id = `ch-wrap-${ch}`;
+    div.innerHTML = `
+        <div class="looper-channel" id="ch-row-${ch}" style="border-color:${color}22">
+            <span class="ch-label" style="color:${color}">CH${ch}</span>
+            <div class="ch-btns">
+                <button class="loop-btn rec"  id="ch${ch}-rec"  onclick="loopRec(${ch})">REC</button>
+                <button class="loop-btn stop" id="ch${ch}-stop" onclick="loopStopRec(${ch})">STOP</button>
+                <button class="loop-btn play" id="ch${ch}-play" onclick="loopPlay(${ch})">PLAY</button>
+                <button class="loop-btn edit" id="ch${ch}-edit" onclick="openEditor(${ch})">✂ EDIT</button>
+                <button class="loop-btn del"  id="ch${ch}-del"  onclick="loopDelete(${ch})">✕</button>
+            </div>
+            <span class="ch-timer" id="ch${ch}-timer">0:00</span>
+        </div>
+        <div class="ch-progress">
+            <div class="ch-progress-bar" id="ch${ch}-bar" style="background:${color}"></div>
+            <div class="ch-playhead" id="ch${ch}-head" style="background:${color};box-shadow:0 0 8px ${color},0 0 16px ${color}"></div>
+        </div>`;
+    return div;
+}
+
 function renderLooperUI() {
     const container = document.getElementById('looperChannels');
-    container.innerHTML = '';
     const channels = Object.keys(looper).map(Number).sort((a,b) => a-b);
+
+    // Remove rows for channels that no longer exist
+    Array.from(container.querySelectorAll('[id^="ch-wrap-"]')).forEach(el => {
+        const ch = parseInt(el.id.replace('ch-wrap-', ''));
+        if (!looper[ch]) el.remove();
+    });
+
+    // Add rows for new channels (preserve existing to keep RAF/state alive)
+    const addBtn = document.getElementById('addChBtn');
     channels.forEach(ch => {
-        const color = chColor(ch);
-        const lp = looper[ch];
-        const div = document.createElement('div');
-        div.id = `ch-wrap-${ch}`;
-        div.innerHTML = `
-            <div class="looper-channel" id="ch-row-${ch}" style="border-color:${color}22">
-                <span class="ch-label" style="color:${color}">CH${ch}</span>
-                <div class="ch-btns">
-                    <button class="loop-btn rec"  id="ch${ch}-rec"  onclick="loopRec(${ch})">REC</button>
-                    <button class="loop-btn stop" id="ch${ch}-stop" onclick="loopStopRec(${ch})">STOP</button>
-                    <button class="loop-btn play" id="ch${ch}-play" onclick="loopPlay(${ch})">PLAY</button>
-                    <button class="loop-btn edit" id="ch${ch}-edit" onclick="openEditor(${ch})" style="display:none">✂</button>
-                    <button class="loop-btn del"  id="ch${ch}-del"  onclick="loopDelete(${ch})" style="display:none">✕</button>
-                </div>
-                <span class="ch-timer" id="ch${ch}-timer">0:00</span>
-            </div>
-            <div class="ch-progress">
-                <div class="ch-progress-bar" id="ch${ch}-bar" style="background:${color}"></div>
-                <div class="ch-playhead"     id="ch${ch}-head" style="background:${color};box-shadow:0 0 8px ${color},0 0 16px ${color}"></div>
-            </div>`;
-        container.appendChild(div);
+        if (!document.getElementById(`ch-wrap-${ch}`)) {
+            const row = buildChannelRow(ch);
+            // Insert before add button if it exists, else append
+            if (addBtn) container.insertBefore(row, addBtn);
+            else container.appendChild(row);
+        }
         updateLoopUI(ch);
     });
-    // Add channel button — only shown when highest channel has a recording
+
+    // Add channel button — create once, just update visibility
+    let btn = document.getElementById('addChBtn');
+    if (!btn) {
+        btn = document.createElement('button');
+        btn.className = 'add-channel-btn';
+        btn.textContent = '+ ADD CHANNEL';
+        btn.onclick = () => createChannel();
+        btn.id = 'addChBtn';
+        container.appendChild(btn);
+    }
     const lastCh = channels[channels.length - 1];
-    const lastHasBuffer = looper[lastCh] && looper[lastCh].buffer;
-    const btn = document.createElement('button');
-    btn.className = 'add-channel-btn';
-    btn.textContent = '+ ADD CHANNEL';
-    btn.onclick = () => createChannel();
-    btn.style.display = lastHasBuffer ? '' : 'none';
-    btn.id = 'addChBtn';
-    container.appendChild(btn);
+    btn.style.display = (looper[lastCh] && looper[lastCh].buffer) ? '' : 'none';
+
     // Mirror to landscape looper panel
     syncLandscapeLooper();
 }
@@ -1933,19 +1953,7 @@ function loopRec(ch) {
     updateLoopUI(ch);
 }
 
-function animateRecBar(ch) {
-    const lp  = looper[ch];
-    const bar = document.getElementById(`ch${ch}-bar`);
-    const start = performance.now();
-    function tick(now) {
-        if (lp.state !== 'recording') return;
-        // Subtle pulse animation while recording
-        const pulse = 50 + 50 * Math.abs(Math.sin((now - start) / 500));
-        bar.style.width = pulse + '%';
-        lp.rafId = requestAnimationFrame(tick);
-    }
-    lp.rafId = requestAnimationFrame(tick);
-}
+
 
 function loopStopRec(ch) {
     if (!isInitialized) return;
@@ -2088,15 +2096,37 @@ function animatePlayBar(ch, lengthMs) {
     const lp   = looper[ch];
     const bar  = document.getElementById(`ch${ch}-bar`);
     const head = document.getElementById(`ch${ch}-head`);
+    if (!bar || !head) return;
     const start = performance.now();
     cancelAnimationFrame(lp.rafId);
     function tick(now) {
+        if (!document.getElementById(`ch${ch}-bar`)) return; // row was removed
         const pct = Math.min(((now - start) / lengthMs) * 100, 100);
         bar.style.width  = pct + '%';
         head.style.left  = pct + '%';
-        // Also update editor playhead if this channel is open in the editor
         if (editorCh === ch) updateEditorPlayhead(pct / 100);
         if (pct < 100 && lp.state === 'playing') lp.rafId = requestAnimationFrame(tick);
+    }
+    lp.rafId = requestAnimationFrame(tick);
+}
+
+function animateRecBar(ch) {
+    const lp  = looper[ch];
+    const bar = document.getElementById(`ch${ch}-bar`);
+    const head = document.getElementById(`ch${ch}-head`);
+    if (!bar || !head) return;
+    const start = performance.now();
+    cancelAnimationFrame(lp.rafId);
+    function tick(now) {
+        if (!document.getElementById(`ch${ch}-bar`)) return;
+        if (lp.state !== 'recording') return;
+        // Pulsing fill that also advances with time (up to ~80% max while recording)
+        const elapsed = now - start;
+        const timePct = Math.min((elapsed / 60000) * 100, 80); // slow creep
+        const pulse   = timePct + 8 * Math.abs(Math.sin(elapsed / 400));
+        bar.style.width  = pulse + '%';
+        head.style.left  = Math.min(pulse, 98) + '%';
+        lp.rafId = requestAnimationFrame(tick);
     }
     lp.rafId = requestAnimationFrame(tick);
 }
@@ -2137,11 +2167,14 @@ function updateLoopUI(ch) {
     const play = document.getElementById(`ch${ch}-play`);
     const edit = document.getElementById(`ch${ch}-edit`);
     const del  = document.getElementById(`ch${ch}-del`);
+    const timer = document.getElementById(`ch${ch}-timer`);
     if (rec)  rec.classList.toggle('active',  lp.state === 'recording');
     if (play) play.classList.toggle('active', lp.state === 'playing');
-    const show = lp.buffer ? 'inline-block' : 'none';
+    const show = lp.buffer ? 'inline-flex' : 'none';
     if (edit) edit.style.display = show;
     if (del)  del.style.display  = show;
+    // Keep timer reset when idle
+    if (timer && lp.state === 'idle') timer.textContent = '0:00';
 }
 
 // ═══════════════════════════════════════════════════
@@ -2905,6 +2938,7 @@ function flattenAll() {
     nextCh = 2;  // reset so next add starts at CH2
 
     renderLooperUI();
+    updateLoopUI(1);
     closeCog();
 
     const btn = document.getElementById('mergeBtn');
