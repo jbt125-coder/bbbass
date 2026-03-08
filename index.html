@@ -223,82 +223,167 @@
         margin-bottom: 14px; display: flex; flex-direction: column;
         align-items: center; gap: 4px; transition: all 0.2s;
     }
-    .merge-btn.ready { border-color: var(--neon); color: var(--neon); }
-    .merge-btn.ready:active { background: var(--neon); color: black; }
+    .merge-btn.ready { border-color: #ffe600; color: #ffe600; box-shadow: 0 0 12px rgba(255,230,0,0.3); }
+    .merge-btn.ready:active { background: #ffe600; color: black; }
     .merge-sub { font-size: 9px; opacity: 0.6; font-weight: normal; letter-spacing: 0.5px; }
 
     /* ── WAVEFORM EDITOR MODAL ── */
     .editor-modal {
-        display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.97);
-        z-index: 200; flex-direction: column; align-items: center; justify-content: center;
-        padding: 20px; gap: 16px;
+        display: none; position: fixed; inset: 0; background: #060608;
+        z-index: 200; flex-direction: column; align-items: center;
+        padding: 14px 16px 10px; gap: 0; overflow-y: auto;
     }
     .editor-modal.open { display: flex; }
-    .editor-title { font-size: 12px; letter-spacing: 2px; color: var(--purple); text-transform: uppercase; }
+    .editor-title { font-size: 11px; letter-spacing: 2px; color: var(--purple);
+        text-transform: uppercase; margin-bottom: 10px; align-self: flex-start; }
+
+    /* ── ORIGINAL waveform (top, static) ── */
+    .editor-orig-label { font-size: 9px; color: #444; letter-spacing: 1px;
+        text-transform: uppercase; align-self: flex-start; margin-bottom: 3px; }
     .editor-canvas-wrap {
-        width: 100%; max-width: 500px; position: relative;
-        background: #0a0a14; border: 1px solid #2a2a3a; border-radius: 10px;
-        overflow: visible; touch-action: none; height: 110px;
+        width: 100%; position: relative;
+        background: #0a0a14; border: 1px solid #1e1e2e; border-radius: 8px;
+        overflow: visible; touch-action: none; height: 70px; flex-shrink: 0;
     }
-    #waveCanvas { display: block; width: 100%; height: 110px; border-radius: 10px; position: absolute; top: 0; left: 0; }
+    .editor-canvas-wrap.orig { opacity: 0.45; pointer-events: none; margin-bottom: 4px; }
+    .editor-canvas-wrap.orig canvas { border-radius: 8px; }
+
+    /* ── RULER ── */
+    .editor-ruler-wrap {
+        width: 100%; height: 24px; position: relative; flex-shrink: 0; margin: 4px 0;
+    }
+    #editorRuler { display: block; width: 100%; height: 24px; }
+    /* target line on ruler */
+    #targetLine {
+        position: absolute; top: 0; bottom: 0; width: 2px;
+        background: #ffaa00; box-shadow: 0 0 6px #ffaa00;
+        pointer-events: none; display: none; transform: translateX(-50%);
+    }
+
+    /* ── WORKING waveform (bottom, updates on keep) ── */
+    .editor-work-label { font-size: 9px; color: #555; letter-spacing: 1px;
+        text-transform: uppercase; align-self: flex-start; margin-bottom: 3px; }
+    #waveCanvas { display: block; width: 100%; height: 70px; border-radius: 8px;
+        position: absolute; top: 0; left: 0; }
     #editorPlayhead {
         position: absolute; top: 0; bottom: 0; width: 2px;
-        background: white; box-shadow: 0 0 8px white, 0 0 16px rgba(255,255,255,0.5);
+        background: white; box-shadow: 0 0 8px white, 0 0 12px rgba(255,255,255,0.4);
         pointer-events: none; z-index: 5; left: 0%; transform: translateX(-50%);
         border-radius: 1px;
     }
-    /* Shaded cut regions */
     .trim-shade-left, .trim-shade-right {
-        position: absolute; top: 0; height: 100%; background: rgba(0,0,0,0.65);
-        pointer-events: none; z-index: 1;
+        position: absolute; top: 0; height: 100%; background: rgba(0,0,0,0.7);
+        pointer-events: none; z-index: 1; border-radius: 8px;
     }
-    /* Big grab handles */
     .trim-handle {
-        position: absolute; top: -10px; height: calc(100% + 20px);
-        width: 6px; background: var(--purple); cursor: ew-resize; touch-action: none;
-        box-shadow: 0 0 14px var(--purple); z-index: 10;
+        position: absolute; top: -8px; height: calc(100% + 16px);
+        width: 5px; background: var(--purple); cursor: ew-resize; touch-action: none;
+        box-shadow: 0 0 12px var(--purple); z-index: 10;
     }
-    /* Fat touch-target tab */
     .trim-handle::before {
         content: ''; position: absolute; top: 50%; left: 50%;
         transform: translate(-50%, -50%);
-        width: 44px; height: 64px; background: var(--purple);
-        border-radius: 10px; opacity: 0.92;
+        width: 40px; height: 56px; background: var(--purple);
+        border-radius: 10px; opacity: 0.9;
     }
-    /* Grip dots */
     .trim-handle::after {
         content: '⋮'; position: absolute; top: 50%; left: 50%;
         transform: translate(-50%, -50%);
-        color: white; font-size: 20px; z-index: 11; pointer-events: none;
+        color: white; font-size: 18px; z-index: 11; pointer-events: none;
     }
-    /* Big time numbers */
+
+    /* ── TARGET LENGTH ROW ── */
+    .editor-target-row {
+        display: flex; align-items: center; gap: 8px;
+        width: 100%; margin: 8px 0 4px;
+    }
+    .editor-target-label { font-size: 9px; color: #555; letter-spacing: 1px;
+        text-transform: uppercase; white-space: nowrap; }
+    .editor-target-input {
+        width: 60px; background: #111; border: 1px solid #333; border-radius: 6px;
+        color: var(--neon); font-family: 'Courier New', monospace; font-size: 14px;
+        text-align: center; padding: 4px 6px;
+    }
+    .editor-target-set {
+        padding: 5px 10px; border-radius: 6px; border: 1px solid #ffaa00;
+        color: #ffaa00; font-family: 'Courier New', monospace; font-size: 10px;
+        background: transparent; cursor: pointer; letter-spacing: 1px;
+    }
+    .editor-target-set:active { background: #ffaa00; color: black; }
+    .editor-target-clear {
+        padding: 5px 8px; border-radius: 6px; border: 1px solid #333;
+        color: #555; font-family: 'Courier New', monospace; font-size: 10px;
+        background: transparent; cursor: pointer;
+    }
+    #targetDurDisplay { font-size: 10px; color: #ffaa00; font-family: monospace;
+        margin-left: auto; white-space: nowrap; display: none; }
+
+    /* ── TIME NUMBERS ── */
     .editor-time-row {
         display: flex; justify-content: space-between; align-items: center;
-        width: 100%; max-width: 500px;
+        width: 100%; margin: 6px 0;
     }
     .editor-time-box { text-align: center; }
-    .editor-time-big { font-size: 24px; font-weight: bold; color: var(--purple); font-family: 'Courier New', monospace; }
-    .editor-time-label { font-size: 9px; color: #555; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+    .editor-time-big { font-size: 20px; font-weight: bold; color: var(--purple);
+        font-family: 'Courier New', monospace; }
+    .editor-time-label { font-size: 8px; color: #444; letter-spacing: 1px;
+        text-transform: uppercase; margin-top: 1px; }
     .editor-dur-box { text-align: center; }
-    .editor-dur-big { font-size: 30px; font-weight: bold; color: var(--neon); font-family: 'Courier New', monospace; }
-    .editor-dur-label { font-size: 9px; color: #555; letter-spacing: 1px; margin-top: 2px; }
-    /* Playing indicator */
-    .editor-playing-row { display: flex; align-items: center; gap: 8px; font-size: 10px; color: #555; letter-spacing: 1px; }
-    .editor-play-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff3860; animation: blink 0.8s infinite; }
+    .editor-dur-big { font-size: 26px; font-weight: bold; color: var(--neon);
+        font-family: 'Courier New', monospace; }
+    .editor-dur-label { font-size: 8px; color: #444; letter-spacing: 1px; margin-top: 1px; }
+    .editor-nudge-group { display: flex; align-items: center; gap: 6px; }
+    .nudge-btn {
+        width: 36px; height: 36px; border-radius: 50%;
+        border: 2px solid var(--neon); color: var(--neon);
+        background: transparent; font-size: 22px; line-height: 1;
+        font-family: 'Courier New', monospace; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        touch-action: none; -webkit-tap-highlight-color: transparent;
+        transition: all 0.1s; user-select: none;
+    }
+    .nudge-btn:active { background: var(--neon); color: black; }
+
+    /* ── PLAYING DOT ── */
+    .editor-playing-row { display: flex; align-items: center; gap: 8px;
+        font-size: 9px; color: #444; letter-spacing: 1px; margin-bottom: 6px; }
+    .editor-play-dot { width: 6px; height: 6px; border-radius: 50%;
+        background: #ff3860; animation: blink 0.8s infinite; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
-    /* Buttons */
-    .editor-btns { display: flex; gap: 10px; width: 100%; max-width: 500px; }
+
+    /* ── UNDO/REDO + action buttons ── */
+    .editor-undo-row { display: flex; gap: 8px; width: 100%; margin-bottom: 6px; }
+    .editor-undo-btn {
+        flex: 1; padding: 10px 4px; border-radius: 8px; border: 1px solid #333;
+        font-family: 'Courier New', monospace; font-size: 10px;
+        cursor: pointer; background: transparent; color: #555; letter-spacing: 1px;
+        transition: all 0.15s;
+    }
+    .editor-undo-btn:not(:disabled):active { background: #222; color: white; }
+    .editor-undo-btn:disabled { opacity: 0.25; cursor: default; }
+    .editor-undo-btn.active-undo { border-color: #888; color: #aaa; }
+    .editor-drum-row { display: flex; gap: 8px; width: 100%; margin-bottom: 6px; }
+    .editor-drum-btn {
+        flex: 1; padding: 9px 4px; border-radius: 8px; border: 1px solid #ff3860;
+        color: #ff3860; font-family: 'Courier New', monospace; font-size: 9px;
+        background: transparent; cursor: pointer; letter-spacing: 0.5px;
+        transition: all 0.15s; text-align: center; line-height: 1.4;
+    }
+    .editor-drum-btn:active { background: #ff3860; color: black; }
+    .editor-drum-btn.removed { border-color: #333; color: #444;
+        text-decoration: line-through; cursor: default; }
+    .editor-btns { display: flex; gap: 8px; width: 100%; }
     .editor-btn {
-        flex: 1; padding: 14px 8px; border-radius: 8px; border: 2px solid;
-        font-family: 'Courier New', monospace; font-size: 11px; font-weight: bold;
+        flex: 1; padding: 13px 6px; border-radius: 8px; border: 2px solid;
+        font-family: 'Courier New', monospace; font-size: 10px; font-weight: bold;
         cursor: pointer; background: transparent; letter-spacing: 1px; transition: all 0.15s;
     }
-    .editor-btn.keep     { border-color: var(--neon);    color: var(--neon); }
-    .editor-btn.keep:active     { background: var(--neon); color: black; }
-    .editor-btn.redo     { border-color: #ff3860; color: #ff3860; }
-    .editor-btn.redo:active     { background: #ff3860; color: black; }
-    .editor-btn.close-ed { border-color: #444; color: #666; }
-    .editor-btn.close-ed:active { background: #333; color: white; }
+    .editor-btn.keep     { border-color: var(--neon); color: var(--neon); }
+    .editor-btn.keep:active { background: var(--neon); color: black; }
+    .editor-btn.undo-reset { border-color: #ff3860; color: #ff3860; font-size: 9px; }
+    .editor-btn.undo-reset:active { background: #ff3860; color: black; }
+    .editor-btn.close-ed { border-color: #333; color: #555; }
+    .editor-btn.close-ed:active { background: #222; color: white; }
 
 
     /* ── DISCO BALL BUTTON ── */
@@ -634,7 +719,7 @@
         </div>
         <div class="modal-section-label">Merge Loops</div>
         <button class="merge-btn" id="mergeBtn" onclick="mergeLoops()">
-            ⊕ COMBINE CH1 + CH2 → CH1
+            ★ MAKE CH2 THE MASTER → CH1
             <span class="merge-sub" id="mergeStatus">Record both channels first</span>
         </button>
         <button class="modal-close" onclick="closeCog()">CLOSE</button>
@@ -645,37 +730,91 @@
 
 <div class="editor-modal" id="editorModal">
     <div class="editor-title">✂ TRIM LOOP</div>
-    <div class="editor-canvas-wrap" id="editorWrap">
-        <canvas id="waveCanvas"></canvas>
-        <div id="editorPlayhead"></div>
-        <div class="trim-shade-left"  id="shadeLeft"></div>
-        <div class="trim-shade-right" id="shadeRight"></div>
-        <div class="trim-handle" id="handleLeft"  style="left:0"></div>
-        <div class="trim-handle" id="handleRight" style="left:calc(100% - 6px)"></div>
+
+```
+<!-- ORIGINAL (frozen) waveform -->
+<div class="editor-orig-label">ORIGINAL</div>
+<div class="editor-canvas-wrap orig" id="origWrap">
+    <canvas id="origCanvas"></canvas>
+</div>
+
+<!-- RULER with target marker -->
+<div class="editor-ruler-wrap" id="rulerWrap">
+    <canvas id="editorRuler"></canvas>
+    <div id="targetLine"></div>
+</div>
+
+<!-- WORKING waveform -->
+<div class="editor-work-label">WORKING COPY</div>
+<div class="editor-canvas-wrap" id="editorWrap">
+    <canvas id="waveCanvas"></canvas>
+    <div id="editorPlayhead"></div>
+    <div class="trim-shade-left"  id="shadeLeft"></div>
+    <div class="trim-shade-right" id="shadeRight"></div>
+    <div class="trim-handle" id="handleLeft"  style="left:0"></div>
+    <div class="trim-handle" id="handleRight" style="left:calc(100% - 5px)"></div>
+</div>
+
+<!-- TARGET LENGTH -->
+<div class="editor-target-row">
+    <div class="editor-target-label">TARGET</div>
+    <input class="editor-target-input" id="targetInput" type="number"
+           min="0.1" max="999" step="0.1" placeholder="sec">
+    <button class="editor-target-set" onclick="setTargetLength()">SET</button>
+    <button class="editor-target-clear" onclick="clearTargetLength()">✕</button>
+    <span id="targetDurDisplay"></span>
+</div>
+
+<!-- TIME NUMBERS with nudge buttons -->
+<div class="editor-time-row">
+    <div class="editor-time-box">
+        <div class="editor-time-big" id="trimStartLabel">0.00</div>
+        <div class="editor-time-label">START</div>
     </div>
-    <div class="editor-time-row">
-        <div class="editor-time-box">
-            <div class="editor-time-big" id="trimStartLabel">0.00</div>
-            <div class="editor-time-label">START</div>
-        </div>
+    <div class="editor-nudge-group">
+        <button class="nudge-btn" ontouchstart="startNudge('left','-',event)" ontouchend="stopNudge(event)" onmousedown="startNudge('left','-',event)" onmouseup="stopNudge(event)" onmouseleave="stopNudge(event)">−</button>
         <div class="editor-dur-box">
             <div class="editor-dur-big" id="trimDurLabel">0.00</div>
             <div class="editor-dur-label">DURATION</div>
         </div>
-        <div class="editor-time-box">
-            <div class="editor-time-big" id="trimEndLabel">0.00</div>
-            <div class="editor-time-label">END</div>
-        </div>
+        <button class="nudge-btn" ontouchstart="startNudge('right','+',event)" ontouchend="stopNudge(event)" onmousedown="startNudge('right','+',event)" onmouseup="stopNudge(event)" onmouseleave="stopNudge(event)">+</button>
     </div>
-    <div class="editor-playing-row">
-        <div class="editor-play-dot"></div>
-        <span id="editorPlayingLabel">drag handles · loop plays live</span>
+    <div class="editor-time-box">
+        <div class="editor-time-big" id="trimEndLabel">0.00</div>
+        <div class="editor-time-label">END</div>
     </div>
-    <div class="editor-btns">
-        <button class="editor-btn redo"     onclick="redoTrim()">↺ RESET</button>
-        <button class="editor-btn keep"     onclick="keepTrim()">✓ KEEP TRIM</button>
-        <button class="editor-btn close-ed" onclick="closeEditor()">✕ CANCEL</button>
-    </div>
+</div>
+
+<!-- PLAYING INDICATOR -->
+<div class="editor-playing-row">
+    <div class="editor-play-dot"></div>
+    <span>drag handles · loop plays live</span>
+</div>
+
+<!-- DRUM TRACK REMOVAL -->
+<div class="editor-drum-row" id="drumRemoveRow">
+    <button class="editor-drum-btn" id="removeDrum1Btn" onclick="removeDrumTrack(1)">
+        🥁 REMOVE CH1 DRUMS
+    </button>
+    <button class="editor-drum-btn" id="removeDrum2Btn" onclick="removeDrumTrack(2)">
+        🥁 REMOVE CH2 DRUMS
+    </button>
+</div>
+
+<!-- UNDO / REDO -->
+<div class="editor-undo-row">
+    <button class="editor-undo-btn" id="undoBtn" onclick="editorUndo()" disabled>↩ UNDO</button>
+    <button class="editor-undo-btn" id="redoBtn" onclick="editorRedo()" disabled>REDO ↪</button>
+    <button class="editor-undo-btn" onclick="resetToOriginal()">⟳ ORIGINAL</button>
+</div>
+
+<!-- ACTION BUTTONS -->
+<div class="editor-btns">
+    <button class="editor-btn keep"     onclick="keepTrim()">✓ KEEP TRIM</button>
+    <button class="editor-btn close-ed" onclick="closeEditor()">✕ CANCEL</button>
+</div>
+```
+
 </div>
 
 <script>
@@ -789,9 +928,9 @@ function setupControls() {
 // ═══════════════════════════════════════════════════
 //  DRUMS
 // ═══════════════════════════════════════════════════
-function playDrum(type) {
+function playDrum(type, fromLoop) {
     if (!ctx) return;
-    loopCapture({ kind: 'drum', type });
+    if (!fromLoop) loopCapture({ kind: 'drum', type });
     const now = ctx.currentTime;
     const osc = ctx.createOscillator(), g = ctx.createGain(), noise = ctx.createBufferSource();
     if (type === 'kick') {
@@ -826,16 +965,21 @@ function playDrum(type) {
 const looper = {
     1: { state:'idle', events:[], buffer:null, timers:[], rafId:null, loopTimeout:null,
          voiceChunks:[], voiceMediaRecorder:null, voiceBlob:null, voiceAudio:null,
-         recStart:0, timerInterval:null },
+         recStart:0, timerInterval:null, seedLoopLen:null },
     2: { state:'idle', events:[], buffer:null, timers:[], rafId:null, loopTimeout:null,
          voiceChunks:[], voiceMediaRecorder:null, voiceBlob:null, voiceAudio:null,
-         recStart:0, timerInterval:null }
+         recStart:0, timerInterval:null, seedLoopLen:null }
 };
 
 function loopCapture(event) {
     [1,2].forEach(ch => {
         const lp = looper[ch];
-        if (lp.state === 'recording') lp.events.push({ ...event, srcCh: ch, t: performance.now() - lp.recStart });
+        if (lp.state === 'recording') lp.events.push({
+            ...event,
+            srcCh: ch,
+            drumLayer: event.kind === 'drum' ? ch : undefined,
+            t: performance.now() - lp.recStart
+        });
     });
 }
 
@@ -851,7 +995,29 @@ function loopRec(ch) {
     if (lp.state === 'recording') return;
     if (lp.state === 'playing') loopStop(ch);
 
-    lp.events = []; lp.voiceChunks = []; lp.state = 'recording';
+    // If recording CH2 and CH1 has a master loop — seed CH2 with CH1's events
+    // and auto-start CH1 playing so you can hear everything while you overdub
+    const otherCh = ch === 2 ? 1 : 2;
+    const otherLp = looper[otherCh];
+    if (ch === 2 && otherLp.buffer) {
+        // Copy CH1's full event list into CH2 as the foundation
+        // Tag them srcCh:1 so they route to loopOsc[1] on playback
+        // Seed with CH1 events — only ONE copy at t=0, tiling happens at STOP time
+        // Preserve drumLayer:1 so editor removal works correctly
+        lp.events = otherLp.buffer.events.map(ev => ({
+            ...ev,
+            srcCh: 1,
+            drumLayer: ev.kind === 'drum' ? 1 : undefined
+        }));
+        // Store CH1's loop length so tiling uses the right interval at stop time
+        lp.seedLoopLen = otherLp.buffer.lengthMs;
+        // Start CH1 playing in the background if not already
+        if (otherLp.state !== 'playing') loopPlay(otherCh);
+    } else {
+        lp.events = [];
+    }
+
+    lp.voiceChunks = []; lp.state = 'recording';
     lp.recStart = performance.now();
 
     // Start mic recording
@@ -890,6 +1056,8 @@ function animateRecBar(ch) {
 
 function loopStopRec(ch) {
     if (!isInitialized) return;
+    // If CH2 was overdubbing over CH1, stop CH1 when recording ends
+    if (ch === 2 && looper[1].state === 'playing') loopStop(1);
     const lp = looper[ch];
     if (lp.state !== 'recording') { loopStop(ch); return; }
 
@@ -906,7 +1074,25 @@ function loopStopRec(ch) {
             const mime = getSupportedMimeType();
             lp.voiceBlob = URL.createObjectURL(new Blob(lp.voiceChunks, { type: mime || 'audio/webm' }));
         }
-        lp.buffer = { events: [...lp.events], lengthMs, trimStart: 0, trimEnd: lengthMs };
+        // If CH2 was seeded from CH1, tile the seeded events to fill the full recording length
+        // so CH1's Otomatone plays throughout every loop repetition, not just the first
+        let finalEvents = [...lp.events];
+        if (ch === 2 && lp.seedLoopLen) {
+            const ch1Len = lp.seedLoopLen;   // use stored length, not current CH1 buffer (may have changed)
+            lp.seedLoopLen = null;            // clear for next recording
+            const seeded = lp.events.filter(ev => ev.srcCh === 1);
+            const live   = lp.events.filter(ev => ev.srcCh !== 1);
+            // Tile seeded CH1 events across full recording length
+            const tiled = [];
+            for (let offset = 0; offset < lengthMs; offset += ch1Len) {
+                seeded.forEach(ev => {
+                    const t = ev.t + offset;
+                    if (t < lengthMs) tiled.push({ ...ev, t, drumLayer: ev.kind === 'drum' ? 1 : undefined });
+                });
+            }
+            finalEvents = [...tiled, ...live].sort((a, b) => a.t - b.t);
+        }
+        lp.buffer = { events: finalEvents, lengthMs, trimStart: 0, trimEnd: lengthMs };
         lp.state  = 'recorded';
         updateLoopUI(ch);
         // Auto-open waveform editor
@@ -965,13 +1151,15 @@ function scheduleLoop(ch) {
     }
 
     // Schedule events within trim window
+    // Drums: always fire (no filtering).
+    // Oto: route by srcCh so layered recordings each use their own oscillator voice.
     const trimmedEvents = events.filter(ev => ev.t >= trimStart && ev.t <= trimEnd);
     trimmedEvents.forEach(ev => {
         const t = lp.timers[lp.timers.push(
             setTimeout(() => {
                 if (lp.state !== 'playing') return;
                 if (ev.kind === 'drum') {
-                    if (!ev.srcCh || ev.srcCh === ch) playDrum(ev.type);
+                    playDrum(ev.type, true);
                 }
                 else if (ev.kind === 'oto') {
                     const osCh = ev.srcCh || ch;
@@ -1036,6 +1224,7 @@ function loopDelete(ch) {
     lp.voiceBlob = null;
     lp.events    = [];
     lp.state     = 'idle';
+    delete origSnapshots[ch];  // clear so next recording gets a fresh original
     document.getElementById(`ch${ch}-timer`).textContent = '0:00';
     updateLoopUI(ch);
 }
@@ -1050,50 +1239,447 @@ function updateLoopUI(ch) {
 }
 
 // ═══════════════════════════════════════════════════
-//  WAVEFORM EDITOR
+//  EDITOR STATE
 // ═══════════════════════════════════════════════════
-let editorCh = null;
-let trimLeftPct  = 0;
-let trimRightPct = 1;
-let editorLoopAudio   = null;   // continuously looping audio in editor
-let editorLoopTimer   = null;
-let editorDrumTimers  = [];
+let editorCh        = null;
+let trimLeftPct     = 0;
+let trimRightPct    = 1;
+let editorLoopAudio = null;
+let editorLoopTimer = null;
+let editorDrumTimers = [];
+let dragRestartTimer = null;
+let dragging         = null;
+let targetSec        = null;   // user-set target duration in seconds
 
+// Undo/redo stacks (each entry = { events, lengthMs, voiceBlob, trimStart, trimEnd })
+const UNDO_MAX = 5;
+let undoStack = [];
+let redoStack = [];
+// Original snapshot — frozen forever on first open of a channel
+let origSnapshots = {};  // keyed by ch
+
+// ── OPEN / CLOSE ─────────────────────────────────────────────────────────
 function openEditor(ch) {
+    if (!looper[ch] || !looper[ch].buffer) return;  // guard against missing buffer
+    if (looper[ch].state === 'playing') loopStop(ch);
     editorCh = ch;
     const lp = looper[ch];
     trimLeftPct  = lp.buffer.trimStart / lp.buffer.lengthMs;
     trimRightPct = lp.buffer.trimEnd   / lp.buffer.lengthMs;
+    undoStack = []; redoStack = [];
+    updateUndoRedoBtns();
+
+    // Freeze original snapshot once per channel recording
+    if (!origSnapshots[ch]) {
+        origSnapshots[ch] = snapshotBuffer(lp);
+    }
 
     document.getElementById('editorModal').classList.add('open');
-    setTimeout(() => { drawWaveform(ch); updateTrimUI(); startEditorLoop(); }, 60);
+    setTimeout(() => {
+        drawOrigWaveform(ch);
+        drawWaveform(ch);
+        drawRuler();
+        updateTrimUI();
+        updateDrumRemoveButtons();
+        startEditorLoop();
+    }, 80);
 }
 
 function closeEditor() {
-    document.getElementById('editorModal').classList.remove('open');
     stopEditorLoop();
+    editorCh = null;
+    document.getElementById('editorModal').classList.remove('open');
     const ph = document.getElementById('editorPlayhead');
     if (ph) ph.style.left = '0%';
 }
 
-// ── Continuous loop playback inside the editor ───────────────────────────
-function startEditorLoop() {
-    stopEditorLoop();
-    scheduleEditorLoop();
+// ── SNAPSHOT HELPERS ─────────────────────────────────────────────────────
+function snapshotBuffer(lp) {
+    return {
+        events:   JSON.parse(JSON.stringify(lp.buffer.events)),
+        lengthMs: lp.buffer.lengthMs,
+        voiceBlob: lp.voiceBlob,
+        trimStart: lp.buffer.trimStart,
+        trimEnd:   lp.buffer.trimEnd,
+    };
 }
 
+function restoreSnapshot(snap, ch) {
+    const lp = looper[ch];
+    lp.buffer.events   = JSON.parse(JSON.stringify(snap.events));
+    lp.buffer.lengthMs = snap.lengthMs;
+    lp.buffer.trimStart = snap.trimStart;
+    lp.buffer.trimEnd   = snap.trimEnd;
+    lp.voiceBlob = snap.voiceBlob;
+    trimLeftPct  = snap.trimStart / snap.lengthMs;
+    trimRightPct = snap.trimEnd   / snap.lengthMs;
+}
+
+// ── UNDO / REDO ──────────────────────────────────────────────────────────
+function pushUndo(snap) {
+    undoStack.push(snap);
+    if (undoStack.length > UNDO_MAX) undoStack.shift();
+    redoStack = [];
+    updateUndoRedoBtns();
+}
+
+function editorUndo() {
+    if (!undoStack.length) return;
+    redoStack.push(snapshotBuffer(looper[editorCh]));
+    const snap = undoStack.pop();
+    restoreSnapshot(snap, editorCh);
+    updateUndoRedoBtns();
+    drawWaveform(editorCh);
+    drawRuler();
+    updateTrimUI();
+    restartEditorLoop();
+}
+
+function editorRedo() {
+    if (!redoStack.length) return;
+    undoStack.push(snapshotBuffer(looper[editorCh]));
+    const snap = redoStack.pop();
+    restoreSnapshot(snap, editorCh);
+    updateUndoRedoBtns();
+    drawWaveform(editorCh);
+    drawRuler();
+    updateTrimUI();
+    restartEditorLoop();
+}
+
+function resetToOriginal() {
+    const snap = origSnapshots[editorCh];
+    if (!snap) return;
+    pushUndo(snapshotBuffer(looper[editorCh]));
+    restoreSnapshot(snap, editorCh);
+    drawWaveform(editorCh);
+    drawRuler();
+    updateTrimUI();
+    restartEditorLoop();
+}
+
+function updateUndoRedoBtns() {
+    const u = document.getElementById('undoBtn');
+    const r = document.getElementById('redoBtn');
+    if (!u || !r) return;
+    u.disabled = undoStack.length === 0;
+    r.disabled = redoStack.length === 0;
+    u.classList.toggle('active-undo', undoStack.length > 0);
+    r.classList.toggle('active-undo', redoStack.length > 0);
+}
+
+// ── TARGET LENGTH ────────────────────────────────────────────────────────
+function removeDrumTrack(srcCh) {
+    const ch = editorCh;
+    if (!ch || !looper[ch].buffer) return;
+    const btn = document.getElementById(`removeDrum${srcCh}Btn`);
+    if (btn.classList.contains('removed')) return;
+
+    // Push undo before destructive change
+    pushUndo(snapshotBuffer(looper[ch]));
+
+    // Remove drum events matching this layer
+    // Use drumLayer if present (set during merge), else fall back to srcCh
+    looper[ch].buffer.events = looper[ch].buffer.events.filter(ev => {
+        if (ev.kind !== 'drum') return true;
+        const layer = ev.drumLayer !== undefined ? ev.drumLayer : (ev.srcCh || ch);
+        return layer !== srcCh;
+    });
+
+    // Mark button as done
+    btn.classList.add('removed');
+    btn.textContent = `✓ CH${srcCh} DRUMS REMOVED`;
+
+    // Redraw waveform to reflect removal
+    drawWaveform(ch);
+    restartEditorLoop();
+    updateUndoRedoBtns();
+}
+
+function updateDrumRemoveButtons() {
+    // Show/hide CH1 and CH2 drum buttons based on whether those srcCh drums exist
+    if (!editorCh || !looper[editorCh].buffer) return;
+    const events = looper[editorCh].buffer.events;
+    [1, 2].forEach(srcCh => {
+        const hasDrums = events.some(ev =>
+            ev.kind === 'drum' && ((ev.drumLayer !== undefined ? ev.drumLayer : (ev.srcCh || editorCh)) === srcCh)
+        );
+        const btn = document.getElementById(`removeDrum${srcCh}Btn`);
+        if (!btn) return;
+        btn.style.display = hasDrums ? '' : 'none';
+        btn.classList.remove('removed');
+        btn.innerHTML = `🥁 REMOVE CH${srcCh} DRUMS`;
+    });
+    // Hide the whole row if no drum buttons are visible
+    const row = document.getElementById('drumRemoveRow');
+    const anyVisible = [1,2].some(s => {
+        const b = document.getElementById(`removeDrum${s}Btn`);
+        return b && b.style.display !== 'none';
+    });
+    if (row) row.style.display = anyVisible ? '' : 'none';
+}
+
+function setTargetLength() {
+    const v = parseFloat(document.getElementById('targetInput').value);
+    if (!v || v <= 0) return;
+    targetSec = v;
+    document.getElementById('targetDurDisplay').textContent = v.toFixed(2) + 's target';
+    document.getElementById('targetDurDisplay').style.display = 'inline';
+    drawRuler();
+}
+
+function clearTargetLength() {
+    targetSec = null;
+    document.getElementById('targetInput').value = '';
+    document.getElementById('targetDurDisplay').style.display = 'none';
+    document.getElementById('targetLine').style.display = 'none';
+    drawRuler();
+}
+
+// ── RULER ────────────────────────────────────────────────────────────────
+function drawRuler() {
+    const ch = editorCh;
+    if (!ch || !looper[ch] || !looper[ch].buffer) return;
+    const canvas = document.getElementById('editorRuler');
+    const wrap   = document.getElementById('rulerWrap');
+    const W = wrap.clientWidth || 300;
+    const H = 24;
+    canvas.width  = W;
+    canvas.height = H;
+    const cx = canvas.getContext('2d');
+    cx.clearRect(0, 0, W, H);
+
+    const durSec = looper[ch].buffer.lengthMs / 1000;
+    // Choose a tick interval that gives ~6-10 ticks
+    const intervals = [0.1,0.25,0.5,1,2,5,10,15,30];
+    let interval = intervals.find(i => durSec / i <= 10) || 30;
+
+    cx.fillStyle = '#333';
+    cx.font = '8px Courier New';
+    cx.textAlign = 'center';
+
+    for (let t = 0; t <= durSec; t += interval) {
+        const x = (t / durSec) * W;
+        cx.fillStyle = '#444';
+        cx.fillRect(x, 0, 1, H * 0.5);
+        cx.fillStyle = '#555';
+        cx.fillText(t.toFixed(t < 1 ? 2 : 1) + 's', x, H - 2);
+    }
+
+    // Target line
+    const tl = document.getElementById('targetLine');
+    if (targetSec && targetSec <= durSec) {
+        const tx = (targetSec / durSec) * W;
+        tl.style.display = 'block';
+        tl.style.left = tx + 'px';
+    } else {
+        tl.style.display = 'none';
+    }
+}
+
+// ── WAVEFORM DRAWING ─────────────────────────────────────────────────────
+async function drawOrigWaveform(ch) {
+    const snap   = origSnapshots[ch];
+    const canvas = document.getElementById('origCanvas');
+    const wrap   = document.getElementById('origWrap');
+    canvas.width  = wrap.clientWidth;
+    canvas.height = 70;
+    await renderWaveToCanvas(canvas, snap ? snap.voiceBlob : null, snap ? snap.events : [], snap ? snap.lengthMs : 1000);
+}
+
+async function drawWaveform(ch) {
+    const lp     = looper[ch];
+    const canvas = document.getElementById('waveCanvas');
+    const wrap   = document.getElementById('editorWrap');
+    canvas.width  = wrap.clientWidth;
+    canvas.height = 70;
+    await renderWaveToCanvas(canvas, lp.voiceBlob, lp.buffer.events, lp.buffer.lengthMs);
+    updateTrimUI();
+}
+
+async function renderWaveToCanvas(canvas, voiceBlob, events, lengthMs) {
+    const W  = canvas.width;
+    const H  = canvas.height;
+    const cx = canvas.getContext('2d');
+    cx.clearRect(0, 0, W, H);
+    cx.fillStyle = '#0a0a14';
+    cx.fillRect(0, 0, W, H);
+
+    if (voiceBlob && isInitialized) {
+        try {
+            const resp    = await fetch(voiceBlob);
+            const ab      = await resp.arrayBuffer();
+            const audioCtx = ctx;  // explicit ref to avoid any shadowing
+            const decoded = await audioCtx.decodeAudioData(ab);
+            const data    = decoded.getChannelData(0);
+            const step    = Math.ceil(data.length / W);
+            const grad    = cx.createLinearGradient(0, 0, 0, H);
+            grad.addColorStop(0,   '#8b5cf6');
+            grad.addColorStop(0.5, '#00f2ff');
+            grad.addColorStop(1,   '#8b5cf6');
+            cx.strokeStyle = grad;
+            cx.lineWidth = 1.5;
+            cx.beginPath();
+            for (let x = 0; x < W; x++) {
+                let max = 0;
+                for (let j = 0; j < step; j++) {
+                    const v = Math.abs(data[x * step + j] || 0);
+                    if (v > max) max = v;
+                }
+                const h = max * (H / 2) * 0.9;
+                cx.moveTo(x, H/2 - h);
+                cx.lineTo(x, H/2 + h);
+            }
+            cx.stroke();
+        } catch(e) { drawFallbackWave(cx, W, H, events, lengthMs); }
+    } else {
+        drawFallbackWave(cx, W, H, events, lengthMs);
+    }
+}
+
+function drawFallbackWave(cx, W, H, events, lengthMs) {
+    if (!events || !lengthMs) return;
+
+    // ── Background ─────────────────────────────────
+    cx.fillStyle = '#0a0a14';
+    cx.fillRect(0, 0, W, H);
+
+    // ── Otomatone pitch line ────────────────────────
+    // x-axis = time, y-axis = frequency (oto.x mapped: -1..1 → bass..treble)
+    // Split canvas: top 55% = oto line, bottom 45% = drums
+    const otoH  = H * 0.55;
+    const drumY = H * 0.60;  // where drum section starts
+
+    // Collect oto events sorted by time, build a continuous path
+    const otoEvs = events
+        .filter(ev => ev.kind === 'oto' || ev.kind === 'oto_end' || ev.kind === 'oto_mute' || ev.kind === 'oto_unmute')
+        .sort((a, b) => a.t - b.t);
+
+    if (otoEvs.length > 0) {
+        // Draw a subtle grid line for oto zero-point
+        cx.strokeStyle = '#1a1a2e';
+        cx.lineWidth = 1;
+        cx.beginPath();
+        cx.moveTo(0, otoH / 2);
+        cx.lineTo(W, otoH / 2);
+        cx.stroke();
+
+        // Glow line for the pitch trajectory
+        const grad = cx.createLinearGradient(0, 0, 0, otoH);
+        grad.addColorStop(0,   '#00f2ff');
+        grad.addColorStop(0.5, '#8b5cf6');
+        grad.addColorStop(1,   '#00f2ff');
+
+        cx.strokeStyle = grad;
+        cx.lineWidth = 2.5;
+        cx.shadowColor = '#00f2ff';
+        cx.shadowBlur  = 6;
+        cx.beginPath();
+
+        let inPath  = false;
+        let muted   = false;
+        let lastX   = 0, lastY = otoH / 2;
+
+        otoEvs.forEach(ev => {
+            const x = (ev.t / lengthMs) * W;
+            if (ev.kind === 'oto') {
+                // x maps -1..1 → freq range; invert y so high pitch = top
+                const pitchNorm = (ev.x + 1) / 2;          // 0..1
+                const y = otoH - (pitchNorm * otoH * 0.85) - otoH * 0.075;
+                if (!inPath || muted) {
+                    cx.moveTo(x, y);
+                    inPath = true;
+                } else {
+                    cx.lineTo(x, y);
+                }
+                muted = false;
+                lastX = x; lastY = y;
+            } else if (ev.kind === 'oto_end' || ev.kind === 'oto_mute') {
+                if (inPath) cx.lineTo(lastX, lastY);
+                muted  = true;
+                inPath = false;
+            } else if (ev.kind === 'oto_unmute') {
+                muted  = false;
+            }
+        });
+        cx.stroke();
+        cx.shadowBlur = 0;
+
+        // Volume dots: small circles at each oto event sized by volume
+        otoEvs.filter(e => e.kind === 'oto').forEach(ev => {
+            const x = (ev.t / lengthMs) * W;
+            const pitchNorm = (ev.x + 1) / 2;
+            const y = otoH - (pitchNorm * otoH * 0.85) - otoH * 0.075;
+            const r = (ev.vol || 0.5) * 3;
+            cx.fillStyle = 'rgba(0,242,255,0.35)';
+            cx.beginPath();
+            cx.arc(x, y, r, 0, Math.PI * 2);
+            cx.fill();
+        });
+    }
+
+    // ── Separator line ──────────────────────────────
+    cx.strokeStyle = '#1e1e2e';
+    cx.lineWidth = 1;
+    cx.beginPath();
+    cx.moveTo(0, drumY - 2);
+    cx.lineTo(W, drumY - 2);
+    cx.stroke();
+
+    // ── Drum ticks ──────────────────────────────────
+    const drumCols  = { kick:'#ff3860', snare:'#ffaa00', clap:'#00f2ff', hat:'#8b5cf6' };
+    const drumRows  = { kick: 0, snare: 1, clap: 2, hat: 3 };
+    const drumSlotH = (H - drumY) / 4;
+
+    events.filter(ev => ev.kind === 'drum').forEach(ev => {
+        const x    = (ev.t / lengthMs) * W;
+        const row  = drumRows[ev.type] ?? 0;
+        const yTop = drumY + row * drumSlotH + 1;
+        const yBot = yTop + drumSlotH - 2;
+
+        cx.strokeStyle = drumCols[ev.type] || '#555';
+        cx.shadowColor = drumCols[ev.type] || '#555';
+        cx.shadowBlur  = 4;
+        cx.lineWidth   = 2;
+        cx.beginPath();
+        cx.moveTo(x, yTop);
+        cx.lineTo(x, yBot);
+        cx.stroke();
+    });
+    cx.shadowBlur = 0;
+
+    // ── Drum labels (tiny, right edge) ─────────────
+    cx.font = '7px Courier New';
+    cx.textAlign = 'right';
+    ['KICK','SNR','CLP','HAT'].forEach((label, i) => {
+        const yMid = drumY + i * drumSlotH + drumSlotH / 2 + 3;
+        cx.fillStyle = Object.values(drumCols)[i];
+        cx.globalAlpha = 0.4;
+        cx.fillText(label, W - 2, yMid);
+    });
+    cx.globalAlpha = 1;
+    cx.textAlign = 'left';
+}
+
+// ── EDITOR LOOP PLAYBACK ─────────────────────────────────────────────────
+function startEditorLoop()    { stopEditorLoop(); scheduleEditorLoop(); }
+function restartEditorLoop()  { stopEditorLoop(); scheduleEditorLoop(); }
+
 function scheduleEditorLoop() {
-    const lp = looper[editorCh];
-    if (!lp || !lp.buffer) return;
+    const ch = editorCh;
+    const lp = looper[ch];
+    if (!ch || !lp || !lp.buffer) return;
+
     const durMs   = lp.buffer.lengthMs;
     const startMs = trimLeftPct  * durMs;
     const endMs   = trimRightPct * durMs;
-    const lenMs   = Math.max(100, endMs - startMs);
-    // Animate editor playhead across the trim window
-    const edStart = performance.now();
-    function tickEditorHead(now) {
-        if (!editorCh) return;
-        const pct = Math.min((now - edStart) / lenMs, 1);
+    const lenMs   = Math.max(200, endMs - startMs);
+
+    // Playhead animation
+    const headStart = performance.now();
+    function tickEditorHead(ts) {
+        if (editorCh !== ch) return;
+        const pct = Math.min((ts - headStart) / lenMs, 1);
         updateEditorPlayhead(trimLeftPct + pct * (trimRightPct - trimLeftPct));
         if (pct < 1) requestAnimationFrame(tickEditorHead);
     }
@@ -1101,32 +1687,50 @@ function scheduleEditorLoop() {
 
     // Voice
     if (lp.voiceBlob) {
-        editorLoopAudio = new Audio(lp.voiceBlob);
-        editorLoopAudio.volume = 0.85;
-        editorLoopAudio.addEventListener('canplay', () => {
-            editorLoopAudio.currentTime = startMs / 1000;
-            editorLoopAudio.play().catch(() => {});
+        const audio = new Audio(lp.voiceBlob);
+        editorLoopAudio = audio;
+        audio.volume = 0.85;
+        audio.addEventListener('canplay', () => {
+            audio.currentTime = startMs / 1000;
+            audio.play().catch(() => {});
         }, { once: true });
-        editorLoopAudio.load();
+        const stopVoice = setTimeout(() => {
+            if (editorLoopAudio === audio) audio.pause();
+        }, lenMs);
+        editorDrumTimers.push(stopVoice);
+        audio.load();
     }
 
-    // Drums — replay events in trim window
-    const now = performance.now();
+    // Drums + Otomatone in trim window
+    // Drums always fire. Oto routes by srcCh so both layers play independently.
     lp.buffer.events.forEach(ev => {
         if (ev.t < startMs || ev.t >= endMs) return;
         const delay = ev.t - startMs;
         const tid = setTimeout(() => {
+            if (editorCh !== ch) return;
             if (ev.kind === 'drum') {
-                if (!ev.srcCh || ev.srcCh === ch) playDrum(ev.type, true);
+                playDrum(ev.type, true);
+            } else if (ev.kind === 'oto') {
+                const osCh = ev.srcCh || ch;
+                if (loopOsc[osCh]) {
+                    loopOsc[osCh].frequency.setTargetAtTime(40 + (ev.x + 1) * 60, ctx.currentTime, 0.05);
+                    loopFilter[osCh].frequency.setTargetAtTime(200 + (1 - ev.y) * 2000, ctx.currentTime, 0.05);
+                    loopGain[osCh].gain.setTargetAtTime(ev.vol, ctx.currentTime, 0.05);
+                }
+            } else if (ev.kind === 'oto_end' || ev.kind === 'oto_mute') {
+                const osCh = ev.srcCh || ch;
+                if (loopGain[osCh]) loopGain[osCh].gain.setTargetAtTime(0, ctx.currentTime, 0.08);
+            } else if (ev.kind === 'oto_unmute') {
+                const osCh = ev.srcCh || ch;
+                if (loopGain[osCh]) loopGain[osCh].gain.setTargetAtTime(ev.vol, ctx.currentTime, 0.05);
             }
         }, delay);
         editorDrumTimers.push(tid);
     });
 
-    // Schedule next loop
     editorLoopTimer = setTimeout(() => {
-        stopEditorLoop();
-        scheduleEditorLoop();
+        if (editorCh !== ch) return;
+        stopEditorLoop(); scheduleEditorLoop();
     }, lenMs);
 }
 
@@ -1135,88 +1739,30 @@ function stopEditorLoop() {
     editorDrumTimers.forEach(t => clearTimeout(t));
     editorDrumTimers = [];
     if (editorLoopAudio) { editorLoopAudio.pause(); editorLoopAudio = null; }
-}
-
-// Called while dragging — restart loop from new trim position
-function restartEditorLoop() {
-    stopEditorLoop();
-    scheduleEditorLoop();
-}
-
-async function drawWaveform(ch) {
-    const lp     = looper[ch];
-    const canvas = document.getElementById('waveCanvas');
-    const wrap   = document.getElementById('editorWrap');
-    canvas.width  = wrap.clientWidth;
-    canvas.height = 100;
-    const cw = canvas.width, ch2 = canvas.height;
-    const ctx2 = canvas.getContext('2d');
-    ctx2.clearRect(0, 0, cw, ch2);
-
-    if (lp.voiceBlob) {
-        // Decode audio for real waveform
-        try {
-            const resp  = await fetch(lp.voiceBlob);
-            const ab    = await resp.arrayBuffer();
-            const decoded = await ctx.decodeAudioData(ab);
-            const data  = decoded.getChannelData(0);
-            const step  = Math.ceil(data.length / cw);
-            const grad  = ctx2.createLinearGradient(0, 0, 0, ch2);
-            grad.addColorStop(0,   '#8b5cf6');
-            grad.addColorStop(0.5, '#00f2ff');
-            grad.addColorStop(1,   '#8b5cf6');
-            ctx2.strokeStyle = grad;
-            ctx2.lineWidth = 1.5;
-            ctx2.beginPath();
-            for (let x = 0; x < cw; x++) {
-                let max = 0;
-                for (let j = 0; j < step; j++) {
-                    const val = Math.abs(data[x * step + j] || 0);
-                    if (val > max) max = val;
-                }
-                const h = max * (ch2 / 2) * 0.9;
-                ctx2.moveTo(x, ch2/2 - h);
-                ctx2.lineTo(x, ch2/2 + h);
-            }
-            ctx2.stroke();
-        } catch(e) {
-            drawFallbackWave(ctx2, cw, ch2);
-        }
-    } else {
-        // Drum-only: draw event markers
-        drawFallbackWave(ctx2, cw, ch2);
+    // Silence loopOsc for the editor channel so it doesn't hang
+    if (editorCh && loopGain[editorCh]) {
+        loopGain[editorCh].gain.setTargetAtTime(0, ctx.currentTime, 0.05);
     }
-    updateTrimUI();
+    // Also silence the other channel's osc if events were from a merge (srcCh 1 & 2)
+    [1, 2].forEach(c2 => {
+        if (loopGain[c2]) loopGain[c2].gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+    });
 }
 
-function drawFallbackWave(ctx2, cw, ch2) {
-    ctx2.strokeStyle = '#444';
-    ctx2.lineWidth = 1;
-    ctx2.beginPath();
-    ctx2.moveTo(0, ch2/2);
-    for (let x = 0; x < cw; x++) {
-        const y = ch2/2 + (Math.random()-0.5) * 30;
-        ctx2.lineTo(x, y);
-    }
-    ctx2.stroke();
-}
-
+// ── PLAYHEAD ─────────────────────────────────────────────────────────────
 function updateEditorPlayhead(frac) {
-    // frac = 0..1 position within the full recording
-    // We want to show position within the trim window only
     if (!editorCh) return;
     const ph = document.getElementById('editorPlayhead');
     if (!ph) return;
-    // Map frac (within full loop) to position within trim window
     const span = trimRightPct - trimLeftPct;
     if (span <= 0) return;
     const relFrac = (frac - trimLeftPct) / span;
     const clipped = Math.max(0, Math.min(1, relFrac));
     const wrap = document.getElementById('editorWrap');
-    const W = wrap ? wrap.clientWidth : 300;
-    ph.style.left = (clipped * W) + 'px';
+    ph.style.left = (clipped * (wrap ? wrap.clientWidth : 300)) + 'px';
 }
 
+// ── TRIM UI ───────────────────────────────────────────────────────────────
 function updateTrimUI() {
     if (!editorCh) return;
     const lp  = looper[editorCh];
@@ -1228,10 +1774,10 @@ function updateTrimUI() {
     const rightPx = trimRightPct * W;
 
     document.getElementById('handleLeft').style.left  = leftPx + 'px';
-    document.getElementById('handleRight').style.left = (rightPx - 6) + 'px';
+    document.getElementById('handleRight').style.left = (rightPx - 5) + 'px';
     document.getElementById('shadeLeft').style.width  = leftPx + 'px';
-    document.getElementById('shadeRight').style.width = (W - rightPx) + 'px';
     document.getElementById('shadeRight').style.left  = rightPx + 'px';
+    document.getElementById('shadeRight').style.width = (W - rightPx) + 'px';
 
     const tStart = trimLeftPct  * dur;
     const tEnd   = trimRightPct * dur;
@@ -1240,10 +1786,34 @@ function updateTrimUI() {
     document.getElementById('trimDurLabel').textContent   = (tEnd - tStart).toFixed(2);
 }
 
-// ── Drag handles ─────────────────────────────────────────────────────────
-let dragging = null;
-let dragRestartTimer = null;
+// ── NUDGE BUTTONS ────────────────────────────────────────────────────────
+let nudgeInterval = null;
+const NUDGE_STEP = 0.01; // seconds per tap
 
+function applyNudge(dir) {
+    if (!editorCh || !looper[editorCh].buffer) return;
+    const durSec = looper[editorCh].buffer.lengthMs / 1000;
+    const stepPct = NUDGE_STEP / durSec;
+    if (dir === '-') trimLeftPct  = Math.max(trimLeftPct  - stepPct, 0);   // LEFT handle left
+    else             trimRightPct = Math.min(trimRightPct + stepPct, 1);    // RIGHT handle right
+    updateTrimUI();
+    clearTimeout(dragRestartTimer);
+    dragRestartTimer = setTimeout(() => restartEditorLoop(), 250);
+}
+
+function startNudge(handle, dir, e) {
+    e.preventDefault();
+    applyNudge(dir);
+    nudgeInterval = setInterval(() => applyNudge(dir), 120);
+}
+
+function stopNudge(e) {
+    if (e) e.preventDefault();
+    clearInterval(nudgeInterval);
+    nudgeInterval = null;
+}
+
+// ── DRAG HANDLES ──────────────────────────────────────────────────────────
 function getEditorX(e) {
     const wrap = document.getElementById('editorWrap');
     const rect = wrap.getBoundingClientRect();
@@ -1263,7 +1833,6 @@ window.addEventListener('touchmove', e => {
     if (dragging === 'left')  trimLeftPct  = Math.min(pct, trimRightPct - 0.02);
     if (dragging === 'right') trimRightPct = Math.max(pct, trimLeftPct  + 0.02);
     updateTrimUI();
-    // Debounce loop restart — don't restart on every pixel, wait 300ms after drag settles
     clearTimeout(dragRestartTimer);
     dragRestartTimer = setTimeout(() => restartEditorLoop(), 300);
 }, { passive: false });
@@ -1278,25 +1847,98 @@ window.addEventListener('mousemove', e => {
     dragRestartTimer = setTimeout(() => restartEditorLoop(), 300);
 });
 
-window.addEventListener('touchend',  () => { if (dragging) { dragging = null; } });
-window.addEventListener('mouseup',   () => { if (dragging) { dragging = null; } });
+window.addEventListener('touchend',  () => { dragging = null; });
+window.addEventListener('mouseup',   () => { dragging = null; });
 
-function keepTrim() {
-    // Save trim positions into buffer
-    const lp  = looper[editorCh];
-    const dur = lp.buffer.lengthMs;
-    lp.buffer.trimStart = trimLeftPct  * dur;
-    lp.buffer.trimEnd   = trimRightPct * dur;
-    closeEditor();
-    // Restart main loop playback with new trim
-    if (lp.state === 'playing') {
-        loopStop(editorCh);
-        loopPlay(editorCh);
+// ── KEEP TRIM (destructive) ───────────────────────────────────────────────
+async function keepTrim() {
+    const ch = editorCh;
+    const lp = looper[ch];
+
+    // Push to undo stack before destructive edit
+    pushUndo(snapshotBuffer(lp));
+
+    const durMs   = lp.buffer.lengthMs;
+    const startMs = trimLeftPct  * durMs;
+    const endMs   = trimRightPct * durMs;
+    const newLen  = endMs - startMs;
+
+    // ── Slice voice audio via OfflineAudioContext ──
+    if (lp.voiceBlob) {
+        try {
+            const resp    = await fetch(lp.voiceBlob);
+            const ab      = await resp.arrayBuffer();
+            const decoded = await ctx.decodeAudioData(ab);
+            const sr      = decoded.sampleRate;
+            const startSamp = Math.floor((startMs / 1000) * sr);
+            const endSamp   = Math.floor((endMs   / 1000) * sr);
+            const frameLen  = endSamp - startSamp;
+            const offline   = new OfflineAudioContext(decoded.numberOfChannels, frameLen, sr);
+            const src       = offline.createBufferSource();
+            // Copy sliced region into new buffer
+            const sliced    = offline.createBuffer(decoded.numberOfChannels, frameLen, sr);
+            for (let ch2 = 0; ch2 < decoded.numberOfChannels; ch2++) {
+                sliced.copyToChannel(decoded.getChannelData(ch2).slice(startSamp, endSamp), ch2);
+            }
+            src.buffer = sliced;
+            src.connect(offline.destination);
+            src.start(0);
+            const rendered = await offline.startRendering();
+            // Encode to WAV blob
+            const wavBlob = audioBufferToWavBlob(rendered);
+            lp.voiceBlob = URL.createObjectURL(wavBlob);
+        } catch(e) { console.warn('Voice slice failed', e); }
     }
+
+    // ── Slice drum/oto events — keep only those in window, rebase to 0 ──
+    lp.buffer.events = lp.buffer.events
+        .filter(ev => ev.t >= startMs && ev.t < endMs)
+        .map(ev => ({ ...ev, t: ev.t - startMs }));
+
+    // ── Update buffer ──
+    lp.buffer.lengthMs  = newLen;
+    lp.buffer.trimStart = 0;
+    lp.buffer.trimEnd   = newLen;
+    trimLeftPct  = 0;
+    trimRightPct = 1;
+
+    // Redraw working waveform to show the cut result
+    await drawWaveform(ch);
+    drawRuler();
+    updateTrimUI();
+    restartEditorLoop();
+    updateUndoRedoBtns();
+}
+
+// ── WAV ENCODER ───────────────────────────────────────────────────────────
+function audioBufferToWavBlob(buffer) {
+    const numCh  = buffer.numberOfChannels;
+    const sr     = buffer.sampleRate;
+    const len    = buffer.length;
+    const bytesPerSample = 2;
+    const blockAlign     = numCh * bytesPerSample;
+    const dataSize       = len * blockAlign;
+    const ab  = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(ab);
+    function ws(o,s){for(let i=0;i<s.length;i++) view.setUint8(o+i, s.charCodeAt(i));}
+    ws(0,'RIFF'); view.setUint32(4, 36+dataSize, true);
+    ws(8,'WAVE'); ws(12,'fmt '); view.setUint32(16,16,true);
+    view.setUint16(20,1,true); view.setUint16(22,numCh,true);
+    view.setUint32(24,sr,true); view.setUint32(28,sr*blockAlign,true);
+    view.setUint16(32,blockAlign,true); view.setUint16(34,16,true);
+    ws(36,'data'); view.setUint32(40,dataSize,true);
+    let offset = 44;
+    for (let i = 0; i < len; i++) {
+        for (let c = 0; c < numCh; c++) {
+            const s = Math.max(-1, Math.min(1, buffer.getChannelData(c)[i]));
+            view.setInt16(offset, s < 0 ? s*0x8000 : s*0x7FFF, true);
+            offset += 2;
+        }
+    }
+    return new Blob([ab], { type: 'audio/wav' });
 }
 
 function redoTrim() {
-    // Reset handles to full recording
     trimLeftPct  = 0;
     trimRightPct = 1;
     updateTrimUI();
@@ -1309,74 +1951,64 @@ function redoTrim() {
 function mergeLoops() {
     const lp1 = looper[1];
     const lp2 = looper[2];
-    if (!lp1.buffer || !lp2.buffer) return;
+    if (!lp2.buffer) return;  // only CH2 is required
 
-    // Stop both channels first
     loopStop(1); loopStop(2);
 
-    // Merged length = longer of the two (both loops cycle over it)
-    const mergedLen = Math.max(lp1.buffer.lengthMs, lp2.buffer.lengthMs);
+    // CH2 is the master — its length is the loop length
+    // CH1 events layer underneath, everything kept as-is (no deduplication)
+    const mergedLen = lp2.buffer.lengthMs;
 
-    // Merge events: keep CH1 events as-is, offset CH2 events by 0 (they start at same time)
-    // Tag each event with its source channel so the scheduler knows which osc to use
-    const ch1Events = lp1.buffer.events.map(ev => ({ ...ev, srcCh: 1 }));
-    const ch2Events = lp2.buffer.events.map(ev => ({ ...ev, srcCh: 2 }));
-    // Sort all events by time
-    const allEvents = [...ch1Events, ...ch2Events].sort((a, b) => a.t - b.t);
+    // Fully wipe CH1 first
+    lp1.buffer    = null;
+    lp1.voiceBlob = null;
+    lp1.events    = [];
+    lp1.voiceAudio = null;
+    delete origSnapshots[1];
+    document.getElementById('ch1-bar').style.width = '0%';
+    document.getElementById('ch1-head').style.left = '0%';
+    document.getElementById('ch1-timer').textContent = '0:00';
 
-    // Deduplicate drum events: same type within 50ms from different channels = same hit
-    const mergedEvents = [];
-    allEvents.forEach(ev => {
-        if (ev.kind === 'drum') {
-            const duplicate = mergedEvents.find(e =>
-                e.kind === 'drum' && e.type === ev.type &&
-                Math.abs(e.t - ev.t) < 50 && e.srcCh !== ev.srcCh
-            );
-            if (!duplicate) mergedEvents.push(ev);
-        } else {
-            mergedEvents.push(ev);
-        }
-    });
-
-    // Voice: if both have voice, we can't easily mix blobs without OfflineAudioContext
-    // Use CH1 voice as primary (it plays), CH2 voice layers on top via a second Audio element
-    // We store both blobs in the merged buffer
+    // Copy CH2 straight into CH1 as the new master
+    const mergedEvents = JSON.parse(JSON.stringify(lp2.buffer.events)).map(ev => ({
+        ...ev,
+        srcCh: 1,
+        drumLayer: ev.kind === 'drum' ? (ev.drumLayer || ev.srcCh || 2) : undefined
+    }));
     lp1.buffer = {
         events:     mergedEvents,
         lengthMs:   mergedLen,
         trimStart:  0,
         trimEnd:    mergedLen,
-        voiceBlob2: lp2.voiceBlob   // CH2 voice stored separately for dual playback
+        voiceBlob2: null
     };
-    // Voice blob stays on lp1.voiceBlob (already CH1's)
-    // If CH1 had no voice but CH2 did, promote CH2's voice
-    if (!lp1.voiceBlob && lp2.voiceBlob) {
-        lp1.voiceBlob = lp2.voiceBlob;
-        lp1.buffer.voiceBlob2 = null;
-    }
+    lp1.voiceBlob = lp2.voiceBlob;
+    lp1.state = 'recorded';
+    delete origSnapshots[1];
+    updateLoopUI(1);
 
-    // Clear CH2
+    // Clear CH2 — free for next overdub
     lp2.buffer    = null;
     lp2.voiceBlob = null;
     lp2.events    = [];
     lp2.state     = 'idle';
+    lp2.voiceAudio = null;
+    delete origSnapshots[2];
+    document.getElementById('ch2-bar').style.width = '0%';
+    document.getElementById('ch2-head').style.left = '0%';
+    document.getElementById('ch2-timer').textContent = '0:00';
     updateLoopUI(2);
-    document.getElementById('ch2-edit').style.display = 'none';
-
-    // Mark CH1 as recorded and ready
-    lp1.state = 'recorded';
-    updateLoopUI(1);
-    document.getElementById('ch1-edit').style.display = 'inline-block';
 
     closeCog();
 
     // Flash confirmation
     const btn = document.getElementById('mergeBtn');
-    btn.textContent = '✓ MERGED!';
-    setTimeout(() => { btn.innerHTML = '⊕ COMBINE CH1 + CH2 → CH1<span class="merge-sub">Record both channels first</span>'; }, 1500);
+    btn.innerHTML = '✓ CH2 IS NOW MASTER IN CH1!<span class="merge-sub"></span>';
+    setTimeout(() => { btn.innerHTML = '★ MAKE CH2 THE MASTER → CH1<span class="merge-sub">Record both channels first</span>'; }, 2000);
 }
 
 function openCog() {
+    try {
     // Update save button states
     [1,2].forEach(ch => {
         const lp  = looper[ch];
@@ -1391,7 +2023,21 @@ function openCog() {
             st.textContent = 'No recording';
         }
     });
+    // Update merge button state — only active when BOTH channels have recordings
+    const both = !!looper[2].buffer;  // only need CH2
+    const mb = document.getElementById('mergeBtn');
+    const ms = document.getElementById('mergeStatus');
+    mb.classList.toggle('ready', !!both);
+    mb.disabled = !both;
+    ms.textContent = both
+        ? 'CH2 becomes master · CH1 layers under · CH2 freed'
+        : 'Record both channels first';
+
     document.getElementById('cogModal').classList.add('open');
+    } catch(e) {
+        console.error('openCog error:', e);
+        document.getElementById('cogModal').classList.add('open');
+    }
 }
 
 function closeCog() {
