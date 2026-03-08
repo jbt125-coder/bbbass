@@ -123,6 +123,8 @@
     .loop-btn.play.active { background: var(--neon); color: black; box-shadow: 0 0 12px var(--neon); }
     .loop-btn.stop        { border-color: #888; color: #888; }
     .loop-btn.edit        { border-color: var(--purple); color: var(--purple); font-size: 9px; padding: 6px 8px; }
+    .loop-btn.del         { border-color: #ff3860; color: #ff3860; font-size: 9px; padding: 6px 8px; }
+    .loop-btn.del:active  { background: #ff3860; color: black; }
     @keyframes pulse-rec { 0%,100% { box-shadow: 0 0 8px #ff3860; } 50% { box-shadow: 0 0 20px #ff3860, 0 0 40px #ff3860; } }
 
     .ch-progress { width: 100%; height: 10px; background: #111; border-radius: 3px; margin-top: 6px; position: relative; overflow: visible; }
@@ -505,6 +507,7 @@
                     <button class="loop-btn stop" id="ch1-stop" onclick="loopStopRec(1)">STOP</button>
                     <button class="loop-btn play" id="ch1-play" onclick="loopPlay(1)">PLAY</button>
                     <button class="loop-btn edit" id="ch1-edit" onclick="openEditor(1)" style="display:none">✂ EDIT</button>
+                    <button class="loop-btn del"  id="ch1-del"  onclick="loopDelete(1)" style="display:none">✕</button>
                 </div>
                 <span class="ch-timer" id="ch1-timer">0:00</span>
             </div>
@@ -519,6 +522,7 @@
                     <button class="loop-btn stop" id="ch2-stop" onclick="loopStopRec(2)">STOP</button>
                     <button class="loop-btn play" id="ch2-play" onclick="loopPlay(2)">PLAY</button>
                     <button class="loop-btn edit" id="ch2-edit" onclick="openEditor(2)" style="display:none">✂ EDIT</button>
+                    <button class="loop-btn del"  id="ch2-del"  onclick="loopDelete(2)" style="display:none">✕</button>
                 </div>
                 <span class="ch-timer" id="ch2-timer">0:00</span>
             </div>
@@ -831,7 +835,7 @@ const looper = {
 function loopCapture(event) {
     [1,2].forEach(ch => {
         const lp = looper[ch];
-        if (lp.state === 'recording') lp.events.push({ ...event, t: performance.now() - lp.recStart });
+        if (lp.state === 'recording') lp.events.push({ ...event, srcCh: ch, t: performance.now() - lp.recStart });
     });
 }
 
@@ -966,7 +970,9 @@ function scheduleLoop(ch) {
         const t = lp.timers[lp.timers.push(
             setTimeout(() => {
                 if (lp.state !== 'playing') return;
-                if (ev.kind === 'drum') playDrum(ev.type);
+                if (ev.kind === 'drum') {
+                    if (!ev.srcCh || ev.srcCh === ch) playDrum(ev.type);
+                }
                 else if (ev.kind === 'oto') {
                     const osCh = ev.srcCh || ch;
                     loopOsc[osCh].frequency.setTargetAtTime(40+(ev.x+1)*60, ctx.currentTime, 0.05);
@@ -1023,12 +1029,24 @@ function loopStop(ch) {
     document.getElementById(`ch${ch}-head`).style.left   = '0%';
 }
 
+function loopDelete(ch) {
+    loopStop(ch);
+    const lp = looper[ch];
+    lp.buffer    = null;
+    lp.voiceBlob = null;
+    lp.events    = [];
+    lp.state     = 'idle';
+    document.getElementById(`ch${ch}-timer`).textContent = '0:00';
+    updateLoopUI(ch);
+}
+
 function updateLoopUI(ch) {
     const lp = looper[ch];
     document.getElementById(`ch${ch}-rec`).classList.toggle('active',  lp.state === 'recording');
     document.getElementById(`ch${ch}-play`).classList.toggle('active', lp.state === 'playing');
-    const editBtn = document.getElementById(`ch${ch}-edit`);
-    editBtn.style.display = lp.buffer ? 'inline-block' : 'none';
+    const show = lp.buffer ? 'inline-block' : 'none';
+    document.getElementById(`ch${ch}-edit`).style.display = show;
+    document.getElementById(`ch${ch}-del`).style.display  = show;
 }
 
 // ═══════════════════════════════════════════════════
@@ -1098,7 +1116,9 @@ function scheduleEditorLoop() {
         if (ev.t < startMs || ev.t >= endMs) return;
         const delay = ev.t - startMs;
         const tid = setTimeout(() => {
-            if (ev.kind === 'drum') playDrum(ev.type, true);
+            if (ev.kind === 'drum') {
+                if (!ev.srcCh || ev.srcCh === ch) playDrum(ev.type, true);
+            }
         }, delay);
         editorDrumTimers.push(tid);
     });
@@ -1302,7 +1322,21 @@ function mergeLoops() {
     const ch1Events = lp1.buffer.events.map(ev => ({ ...ev, srcCh: 1 }));
     const ch2Events = lp2.buffer.events.map(ev => ({ ...ev, srcCh: 2 }));
     // Sort all events by time
-    const mergedEvents = [...ch1Events, ...ch2Events].sort((a, b) => a.t - b.t);
+    const allEvents = [...ch1Events, ...ch2Events].sort((a, b) => a.t - b.t);
+
+    // Deduplicate drum events: same type within 50ms from different channels = same hit
+    const mergedEvents = [];
+    allEvents.forEach(ev => {
+        if (ev.kind === 'drum') {
+            const duplicate = mergedEvents.find(e =>
+                e.kind === 'drum' && e.type === ev.type &&
+                Math.abs(e.t - ev.t) < 50 && e.srcCh !== ev.srcCh
+            );
+            if (!duplicate) mergedEvents.push(ev);
+        } else {
+            mergedEvents.push(ev);
+        }
+    });
 
     // Voice: if both have voice, we can't easily mix blobs without OfflineAudioContext
     // Use CH1 voice as primary (it plays), CH2 voice layers on top via a second Audio element
