@@ -308,6 +308,64 @@
     .merge-btn.ready:active { background: #ffe600; color: black; }
     .merge-sub { font-size: 9px; opacity: 0.6; font-weight: normal; letter-spacing: 0.5px; }
 
+    /* ── AI DRUM LOOP ── */
+    .modal-box { overflow-y: auto; max-height: 90vh; }
+    .ai-drum-section { margin-bottom: 16px; }
+    .ai-prompt-row { display: flex; gap: 6px; margin-bottom: 8px; }
+    .ai-prompt-input {
+        flex: 1; background: #1a1a2e; border: 1px solid #333; border-radius: 8px;
+        color: white; font-family: 'Courier New', monospace; font-size: 12px;
+        padding: 8px 10px; resize: none; height: 56px;
+    }
+    .ai-prompt-input:focus { outline: none; border-color: var(--purple); }
+    .ai-generate-btn {
+        padding: 0 14px; border-radius: 8px; border: 2px solid var(--purple);
+        color: var(--purple); background: transparent;
+        font-family: 'Courier New', monospace; font-size: 10px; font-weight: bold;
+        cursor: pointer; letter-spacing: 1px; transition: all 0.2s;
+        white-space: nowrap; align-self: stretch;
+    }
+    .ai-generate-btn:active { background: var(--purple); color: white; }
+    .ai-generate-btn:disabled { opacity: 0.4; cursor: default; }
+    .ai-status { font-size: 9px; color: #555; letter-spacing: 1px; min-height: 14px;
+        margin-bottom: 6px; }
+    .ai-pattern-box {
+        width: 100%; background: #0a0a10; border: 1px solid #222; border-radius: 8px;
+        color: #a78bfa; font-family: 'Courier New', monospace; font-size: 11px;
+        padding: 10px; resize: vertical; min-height: 110px;
+        line-height: 1.6; letter-spacing: 0.3px;
+    }
+    .ai-pattern-box:focus { outline: none; border-color: var(--purple); }
+    .ai-pattern-box::placeholder { color: #333; font-size: 10px; }
+    .ai-action-row { display: flex; gap: 8px; margin-top: 8px; }
+    .ai-play-btn {
+        flex: 2; padding: 12px; border-radius: 8px; border: 2px solid #ff3860;
+        color: #ff3860; background: transparent;
+        font-family: 'Courier New', monospace; font-size: 11px; font-weight: bold;
+        cursor: pointer; letter-spacing: 1px; transition: all 0.2s;
+    }
+    .ai-play-btn:active { background: #ff3860; color: black; }
+    .ai-play-btn.playing { background: #ff3860; color: black;
+        animation: pulse-rec 1s infinite; }
+    .ai-stop-btn {
+        flex: 1; padding: 12px; border-radius: 8px; border: 2px solid #555;
+        color: #555; background: transparent;
+        font-family: 'Courier New', monospace; font-size: 11px;
+        cursor: pointer; transition: all 0.2s;
+    }
+    .ai-stop-btn:active { background: #333; }
+    .ai-bpm-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .ai-bpm-label { font-size: 9px; color: #555; letter-spacing: 1px; }
+    .ai-bpm-input {
+        width: 54px; background: #1a1a2e; border: 1px solid #333; border-radius: 6px;
+        color: var(--neon); font-family: 'Courier New', monospace; font-size: 14px;
+        text-align: center; padding: 4px 6px;
+    }
+    .ai-swing-label { font-size: 9px; color: #555; letter-spacing: 1px; margin-left: 8px; }
+    .ai-swing-input { width: 44px; background: #1a1a2e; border: 1px solid #333;
+        border-radius: 6px; color: var(--neon); font-family: 'Courier New', monospace;
+        font-size: 14px; text-align: center; padding: 4px 6px; }
+
     /* ── WAVEFORM EDITOR MODAL ── */
     .editor-modal {
         display: none; position: fixed; inset: 0; background: #060608;
@@ -780,15 +838,41 @@
 <div class="modal-overlay" id="cogModal">
     <div class="modal-box">
         <div class="modal-title">⚙ Settings</div>
-        <div class="modal-section-label">Save Loop as Audio</div>
-        <div id="cogSaveList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;max-height:180px;overflow-y:auto;"></div>
-        <div class="modal-section-label">Flatten</div>
-        <button class="merge-btn" id="mergeBtn" onclick="flattenAll()">
-            ★ FLATTEN ALL CHANNELS → CH1
-            <span class="merge-sub" id="mergeStatus">Record at least 2 channels first</span>
-        </button>
-        <button class="modal-close" onclick="closeCog()">CLOSE</button>
+
+```
+    <div class="modal-section-label">🤖 AI Drum Loop</div>
+    <div class="ai-drum-section">
+        <div class="ai-prompt-row">
+            <textarea class="ai-prompt-input" id="aiPromptInput"
+                placeholder="Describe your beat... e.g. 'trap beat heavy kick on 1 and 3, hi hat every 8th note, snare on 2 and 4'"></textarea>
+            <button class="ai-generate-btn" id="aiGenerateBtn" onclick="aiGenerateDrumLoop()">✦ GENERATE</button>
+        </div>
+        <div class="ai-status" id="aiStatus"></div>
+        <div class="ai-bpm-row">
+            <span class="ai-bpm-label">BPM</span>
+            <input class="ai-bpm-input" id="aiBpm" type="number" value="90" min="40" max="240">
+            <span class="ai-swing-label">SWING %</span>
+            <input class="ai-swing-input" id="aiSwing" type="number" value="0" min="0" max="50">
+        </div>
+        <textarea class="ai-pattern-box" id="aiPatternBox"
+            placeholder="Pattern appears here after generating — or paste your own:&#10;&#10;K:  1 . . . 3 . . .&#10;S:  . . 2 . . . 4 .&#10;H:  1 2 3 4 1 2 3 4&#10;&#10;Numbers = beat hits, dots = silence"></textarea>
+        <div class="ai-action-row">
+            <button class="ai-play-btn" id="aiPlayBtn" onclick="aiPlayPattern()">⏺ PLAY + RECORD</button>
+            <button class="ai-stop-btn" id="aiStopBtn" onclick="aiStopPattern()">■ STOP</button>
+        </div>
     </div>
+
+    <div class="modal-section-label">Save Loop as Audio</div>
+    <div id="cogSaveList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;max-height:140px;overflow-y:auto;"></div>
+    <div class="modal-section-label">Flatten</div>
+    <button class="merge-btn" id="mergeBtn" onclick="flattenAll()">
+        ★ FLATTEN ALL CHANNELS → CH1
+        <span class="merge-sub" id="mergeStatus">Record at least 2 channels first</span>
+    </button>
+    <button class="modal-close" onclick="closeCog()">CLOSE</button>
+</div>
+```
+
 </div>
 
 </div><!-- /landscape-left -->
@@ -1449,6 +1533,240 @@ function syncLandscapeLooper() {
     const src = document.getElementById('looperChannels');
     const dst = document.getElementById('looperChannels2');
     if (src && dst) dst.innerHTML = src.innerHTML;
+}
+
+// ═══════════════════════════════════════════════════
+//  AI DRUM LOOP ENGINE
+// ═══════════════════════════════════════════════════
+
+let aiPatternTimers = [];
+let aiPatternLoopTimeout = null;
+let aiPatternRecCh = null;
+let aiPatternPlaying = false;
+
+// Map of row label → drum type or custom pad index
+function getAiDrumMap() {
+    const map = {
+        'K': 'kick', 'KICK': 'kick',
+        'S': 'snare', 'SNARE': 'snare',
+        'C': 'clap', 'CLAP': 'clap',
+        'H': 'hat', 'HAT': 'hat',
+        'HH': 'hat', 'CH': 'hat', 'OH': 'openhat',
+    };
+    // Add custom pads by their name (first word, uppercased)
+    customPads.forEach((pad, idx) => {
+        const key = pad.name.split(' ')[0].toUpperCase();
+        map[key] = `custom_${idx}`;
+        map[`P${idx + 1}`] = `custom_${idx}`;  // also P1-P8
+    });
+    return map;
+}
+
+// Parse the text pattern into a list of { drumType, timeMs } events
+// Pattern format:
+//   BPM: 90
+//   BARS: 2
+//   K:  1 . . . 3 . . .
+//   S:  . . 2 . . . 4 .
+//   H:  e e e e e e e e    (e = every step)
+function parseAiPattern(text, bpm, swingPct) {
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+    let bars = 1;
+    const drumMap = getAiDrumMap();
+    const stepRows = [];
+
+    lines.forEach(line => {
+        if (line.startsWith('//') || line.startsWith('#')) return;
+        const barMatch = line.match(/^BARS?:\s*(\d+)/i);
+        if (barMatch) { bars = parseInt(barMatch[1]); return; }
+        const bpmMatch = line.match(/^BPM:\s*(\d+)/i);
+        if (bpmMatch) { /* bpm comes from UI input */ return; }
+
+        // Row: LABEL: steps...
+        const rowMatch = line.match(/^([A-Z0-9]+):\s*(.+)/i);
+        if (!rowMatch) return;
+        const label = rowMatch[1].toUpperCase();
+        const drumType = drumMap[label];
+        if (!drumType) return;
+
+        // Steps: split on whitespace and pipes
+        const raw = rowMatch[2].replace(/\|/g, ' ');
+        const steps = raw.trim().split(/\s+/);
+        stepRows.push({ drumType, steps });
+    });
+
+    if (stepRows.length === 0) return null;
+
+    const stepsPerBar = Math.max(...stepRows.map(r => r.steps.length));
+    const totalSteps = stepsPerBar * bars;
+    const msPerBeat = 60000 / bpm;
+    const msPerStep = msPerBeat / (stepsPerBar / 4);  // assume 4/4
+    const totalMs = msPerStep * totalSteps;
+    const swingOffset = msPerStep * (swingPct / 100) * 0.5;
+
+    const events = [];
+    stepRows.forEach(({ drumType, steps }) => {
+        // Tile steps across all bars
+        for (let bar = 0; bar < bars; bar++) {
+            steps.forEach((step, i) => {
+                if (step === '.' || step === '-' || step === '_') return;
+                const globalStep = bar * stepsPerBar + i;
+                let t = globalStep * msPerStep;
+                // Apply swing on odd steps
+                if (globalStep % 2 === 1) t += swingOffset;
+                events.push({ drumType, t });
+            });
+        }
+    });
+
+    events.sort((a, b) => a.t - b.t);
+    return { events, totalMs };
+}
+
+function aiPlayPattern() {
+    if (!isInitialized) { alert('Tap System On first'); return; }
+    const text = document.getElementById('aiPatternBox').value.trim();
+    if (!text) { document.getElementById('aiStatus').textContent = 'Paste or generate a pattern first'; return; }
+
+    const bpm   = parseInt(document.getElementById('aiBpm').value) || 90;
+    const swing = parseInt(document.getElementById('aiSwing').value) || 0;
+    const parsed = parseAiPattern(text, bpm, swing);
+    if (!parsed || parsed.events.length === 0) {
+        document.getElementById('aiStatus').textContent = 'Could not parse pattern — check format';
+        return;
+    }
+
+    aiStopPattern();  // clear any existing
+
+    // Find next free channel or create one
+    let recCh = null;
+    const channels = Object.keys(looper).map(Number).sort((a,b)=>a-b);
+    for (const ch of channels) {
+        if (!looper[ch].buffer && looper[ch].state === 'idle') { recCh = ch; break; }
+    }
+    if (!recCh) {
+        recCh = nextCh++;
+        looper[recCh] = makeLooperChannel(recCh);
+        if (isInitialized) initChannelOsc(recCh);
+        renderLooperUI();
+    }
+
+    aiPatternRecCh = recCh;
+    aiPatternPlaying = true;
+    document.getElementById('aiPlayBtn').classList.add('playing');
+    document.getElementById('aiPlayBtn').textContent = '⏺ RECORDING...';
+    document.getElementById('aiStatus').textContent = `Recording into CH${recCh} — hit STOP when done`;
+
+    // Start recording on that channel
+    loopRec(recCh);
+
+    // Schedule pattern loop
+    function scheduleOnce() {
+        if (!aiPatternPlaying) return;
+        parsed.events.forEach(ev => {
+            const tid = setTimeout(() => {
+                if (!aiPatternPlaying) return;
+                playDrum(ev.drumType, true);       // play sound (fromLoop=true skips loopCapture)
+                loopCapture({ kind: 'drum', type: ev.drumType });  // but we DO want to capture
+            }, ev.t);
+            aiPatternTimers.push(tid);
+        });
+        aiPatternLoopTimeout = setTimeout(() => {
+            if (aiPatternPlaying) scheduleOnce();
+        }, parsed.totalMs);
+    }
+    scheduleOnce();
+}
+
+function aiStopPattern() {
+    aiPatternPlaying = false;
+    aiPatternTimers.forEach(t => clearTimeout(t));
+    aiPatternTimers = [];
+    clearTimeout(aiPatternLoopTimeout);
+
+    if (aiPatternRecCh !== null) {
+        loopStopRec(aiPatternRecCh);
+        aiPatternRecCh = null;
+    }
+
+    const btn = document.getElementById('aiPlayBtn');
+    if (btn) { btn.classList.remove('playing'); btn.textContent = '⏺ PLAY + RECORD'; }
+    const status = document.getElementById('aiStatus');
+    if (status && status.textContent.startsWith('Recording')) status.textContent = 'Stopped — check your channel';
+}
+
+async function aiGenerateDrumLoop() {
+    const prompt = document.getElementById('aiPromptInput').value.trim();
+    if (!prompt) { document.getElementById('aiStatus').textContent = 'Enter a description first'; return; }
+
+    const bpm = document.getElementById('aiBpm').value || 90;
+    const btn = document.getElementById('aiGenerateBtn');
+    btn.disabled = true;
+    btn.textContent = '...';
+    document.getElementById('aiStatus').textContent = 'Generating...';
+    document.getElementById('aiPatternBox').value = '';
+
+    // Build pad list for Claude so it knows what's available
+    const customPadNames = customPads.map((p, i) => `P${i+1}=${p.name}`).join(', ');
+
+    const systemPrompt = `You are a drum pattern generator for a music app. Output ONLY a drum pattern in this exact format — no explanation, no markdown, no extra text.
+
+FORMAT:
+BPM: [number]
+BARS: [1 or 2]
+K:  [steps]
+S:  [steps]
+H:  [steps]
+C:  [steps]
+[optional custom pads]
+
+RULES:
+- Steps are space-separated tokens. Use numbers (1-8 or 1-16 depending on resolution) for hits, dots for silence
+- Each row must have the same number of steps (8 or 16)
+- K = kick, S = snare, H = hi-hat, C = clap
+- Custom pads available: ${customPadNames}
+- Use custom pad labels (P1-P8) if the description calls for them
+- BPM should match the feel requested
+- Keep it musical and groovy
+
+Example output for a basic 4/4 beat at 8 steps:
+BPM: 90
+BARS: 1
+K:  1 . . . 2 . . .
+S:  . . 1 . . . 1 .
+H:  1 1 1 1 1 1 1 1
+C:  . . . . 1 . . .`;
+
+    try {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 400,
+                system: systemPrompt,
+                messages: [{ role: 'user', content: `Create a drum pattern for: ${prompt}. BPM around ${bpm}.` }]
+            })
+        });
+
+        const data = await response.json();
+        if (data.content && data.content[0] && data.content[0].text) {
+            const pattern = data.content[0].text.trim();
+            document.getElementById('aiPatternBox').value = pattern;
+            // Extract BPM from response and update input
+            const bpmMatch = pattern.match(/BPM:\s*(\d+)/i);
+            if (bpmMatch) document.getElementById('aiBpm').value = bpmMatch[1];
+            document.getElementById('aiStatus').textContent = '✓ Pattern ready — tap PLAY + RECORD';
+        } else {
+            document.getElementById('aiStatus').textContent = 'Generation failed — try pasting manually';
+        }
+    } catch(e) {
+        document.getElementById('aiStatus').textContent = 'Network error — paste pattern manually';
+        console.error('AI drum error:', e);
+    }
+
+    btn.disabled = false;
+    btn.textContent = '✦ GENERATE';
 }
 
 // ═══════════════════════════════════════════════════
