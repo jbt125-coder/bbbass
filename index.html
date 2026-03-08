@@ -94,10 +94,90 @@
     .pad {
         height: 70px; background: var(--pad); border: 2px solid #333; border-radius: 8px;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
-        font-weight: bold; font-size: 12px; transition: 0.1s; cursor: pointer;
+        font-weight: bold; font-size: 12px; transition: 0.1s; cursor: pointer; position: relative;
+        user-select: none; -webkit-user-select: none;
     }
     .pad:active, .pad.active { background: var(--neon); color: black; box-shadow: 0 0 20px var(--neon); transform: scale(0.95); }
     .pad span { font-size: 9px; opacity: 0.7; margin-top: 4px; }
+    .pad.custom-pad { border-color: var(--purple); }
+    .pad.custom-pad:active { background: var(--purple); box-shadow: 0 0 20px var(--purple); }
+    .pad.empty-pad { border-color: #222; color: #333; }
+    .pad .pad-assign-btn {
+        position: absolute; top: 3px; right: 4px;
+        font-size: 9px; color: #444; background: none; border: none;
+        cursor: pointer; padding: 2px 4px; border-radius: 3px; line-height: 1;
+        touch-action: manipulation;
+    }
+    .pad:hover .pad-assign-btn, .pad.custom-pad .pad-assign-btn { color: #888; }
+    .custom-pads-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 90%; margin-bottom: 10px; }
+
+    /* ── LANDSCAPE MODE ── */
+    @media (orientation: landscape) {
+        body { flex-direction: row; align-items: flex-start; padding: 0; overflow-x: hidden; }
+        .landscape-left {
+            width: 42%; min-height: 100vh; display: flex !important; flex-direction: column;
+            align-items: center; padding: 8px 6px; overflow-y: auto; flex-shrink: 0;
+        }
+        .landscape-right {
+            width: 58%; min-height: 100vh; display: flex !important; flex-direction: column;
+            align-items: center; padding: 8px 6px 0; overflow-y: auto; flex-shrink: 0;
+            border-left: 1px solid #1a1a2e;
+        }
+        .drum-grid { width: 100%; }
+        .custom-pads-grid { width: 100%; }
+        .landscape-looper {
+            width: 100%; background: #0e0e12; border: 1px solid #2a2a3a;
+            border-radius: 10px; padding: 8px 10px; margin-top: auto;
+        }
+        .landscape-looper .looper-title { font-size: 9px; margin-bottom: 6px; }
+    }
+    /* Portrait: hide landscape panel, unwrap landscape-left */
+    .landscape-only { display: none !important; }
+    .landscape-left { display: contents; }
+    @media (orientation: landscape) {
+        .landscape-only { display: flex !important; }
+        .landscape-left { display: flex !important; }
+        .portrait-only  { display: none !important; }
+    }
+
+    /* ── SOUND PICKER MODAL ── */
+    .sound-picker-modal {
+        display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92);
+        z-index: 500; align-items: flex-end; justify-content: center;
+    }
+    .sound-picker-modal.open { display: flex; }
+    .sound-picker-box {
+        background: #12121a; border: 1px solid var(--purple); border-radius: 20px 20px 0 0;
+        padding: 20px 16px 30px; width: 100%; max-width: 520px;
+        max-height: 80vh; display: flex; flex-direction: column;
+    }
+    .sound-picker-title { font-size: 11px; letter-spacing: 2px; color: var(--purple);
+        text-transform: uppercase; margin-bottom: 4px; }
+    .sound-picker-name-row { display: flex; gap: 8px; margin-bottom: 14px; align-items: center; }
+    .sound-picker-name-input {
+        flex: 1; background: #1a1a2e; border: 1px solid #333; border-radius: 8px;
+        color: white; font-family: 'Courier New', monospace; font-size: 13px;
+        padding: 8px 12px;
+    }
+    .sound-picker-name-input:focus { outline: none; border-color: var(--purple); }
+    .sound-cat-label { font-size: 9px; color: #444; letter-spacing: 1px;
+        text-transform: uppercase; margin: 8px 0 6px; }
+    .sound-list { overflow-y: auto; flex: 1; }
+    .sound-category { margin-bottom: 14px; }
+    .sound-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .sound-option {
+        padding: 10px 6px; border-radius: 8px; border: 1px solid #222;
+        background: #1a1a1e; color: #888; font-family: 'Courier New', monospace;
+        font-size: 10px; cursor: pointer; text-align: center; letter-spacing: 0.5px;
+        transition: all 0.15s; line-height: 1.4;
+    }
+    .sound-option:active, .sound-option.selected { border-color: var(--purple); color: var(--purple); background: #1e1a2e; }
+    .sound-option small { display: block; font-size: 8px; color: #444; margin-top: 2px; }
+    .sound-picker-close {
+        width: 100%; padding: 12px; background: transparent; border: 1px solid #333;
+        color: #555; font-family: 'Courier New', monospace; font-size: 11px;
+        border-radius: 8px; cursor: pointer; margin-top: 10px; flex-shrink: 0;
+    }
 
     /* ── LOOPER ── */
     .looper-section {
@@ -548,6 +628,27 @@
 
 <div class="header">Beastie Bass V2</div>
 
+<!-- LANDSCAPE RIGHT PANEL (drum section) — shown in landscape, hidden in portrait -->
+
+<div class="landscape-right landscape-only" id="landscapeRight">
+    <div style="font-size:10px;letter-spacing:2px;color:var(--neon);margin:4px 0 8px;text-align:center;text-transform:uppercase;">⟳ Drums</div>
+    <div class="drum-grid" id="drumGrid2">
+        <div class="pad" onpointerdown="playDrum('kick')">KICK<span>Sub-Bass</span></div>
+        <div class="pad" onpointerdown="playDrum('snare')">SNARE<span>Pop</span></div>
+        <div class="pad" onpointerdown="playDrum('clap')">CLAP<span>Studio</span></div>
+        <div class="pad" onpointerdown="playDrum('hat')">HAT<span>Crisp</span></div>
+    </div>
+    <div style="font-size:9px;letter-spacing:2px;color:#444;text-transform:uppercase;margin:6px 0 6px;text-align:center;">Custom Pads</div>
+    <div class="custom-pads-grid" id="customPadsGrid2"></div>
+    <div class="landscape-looper" style="margin-top:10px;">
+        <div class="looper-title">⟳ Looper</div>
+        <div class="looper-channels" id="looperChannels2"></div>
+    </div>
+</div>
+
+<!-- LANDSCAPE LEFT PANEL — everything else in landscape -->
+
+<div class="landscape-left" id="landscapeLeft">
 <div class="top-bar">
     <button class="disco-btn" id="discoBtn" onclick="openDanceSetup()">🪩</button>
     <button class="btn-start" id="startBtn" onclick="initAudio()">START SYSTEM</button>
@@ -574,14 +675,15 @@
     </div>
 </div>
 
-<div class="drum-grid">
+<div class="drum-grid portrait-only">
     <div class="pad" onpointerdown="playDrum('kick')">KICK<span>Sub-Bass</span></div>
     <div class="pad" onpointerdown="playDrum('snare')">SNARE<span>Pop</span></div>
     <div class="pad" onpointerdown="playDrum('clap')">CLAP<span>Studio</span></div>
     <div class="pad" onpointerdown="playDrum('hat')">HAT<span>Crisp</span></div>
 </div>
+<div class="custom-pads-grid portrait-only" id="customPadsGrid1"></div>
 
-<div class="looper-section">
+<div class="looper-section portrait-only">
     <div class="looper-title">⟳ Looper</div>
     <div class="looper-channels" id="looperChannels"></div>
 </div>
@@ -686,6 +788,21 @@
             <span class="merge-sub" id="mergeStatus">Record at least 2 channels first</span>
         </button>
         <button class="modal-close" onclick="closeCog()">CLOSE</button>
+    </div>
+</div>
+
+</div><!-- /landscape-left -->
+
+<!-- SOUND PICKER MODAL -->
+
+<div class="sound-picker-modal" id="soundPickerModal">
+    <div class="sound-picker-box">
+        <div class="sound-picker-title">🥁 Assign Sound</div>
+        <div class="sound-picker-name-row">
+            <input class="sound-picker-name-input" id="soundPickerName" type="text" placeholder="Pad name..." maxlength="12">
+        </div>
+        <div class="sound-list" id="soundList"></div>
+        <button class="sound-picker-close" onclick="closeSoundPicker()">✕ Cancel</button>
     </div>
 </div>
 
@@ -906,7 +1023,432 @@ function playDrum(type, fromLoop) {
         g.gain.setValueAtTime(0.3,now); g.gain.exponentialRampToValueAtTime(0.01,now+0.05);
         noise.connect(filt); filt.connect(g); g.connect(ctx.destination);
         noise.start(); noise.onended=()=>{g.disconnect();filt.disconnect();};
+    } else if (type && type.startsWith('custom_')) {
+        const idx = parseInt(type.split('_')[1]);
+        if (customPads && customPads[idx] && customPads[idx].fn) customPads[idx].fn(null);
     }
+}
+
+// ═══════════════════════════════════════════════════
+//  CUSTOM PADS + SOUND LIBRARY
+// ═══════════════════════════════════════════════════
+
+const SOUND_LIBRARY = [
+    { cat: 'Kicks', sounds: [
+        { id: 'kick2',    name: 'DEEP KICK',   sub: '808-style',    fn: s => synthKick(s, 80,  0.9) },
+        { id: 'kick3',    name: 'TIGHT KICK',  sub: 'punchy',       fn: s => synthKick(s, 200, 0.3) },
+        { id: 'kick4',    name: 'TRAP KICK',   sub: 'sub rumble',   fn: s => synthKick(s, 60,  1.2) },
+        { id: 'room_kick',name: 'ROOM KICK',   sub: 'boomy',        fn: s => synthRoomKick(s) },
+    ]},
+    { cat: 'Snares', sounds: [
+        { id: 'snare2',   name: 'FAT SNARE',   sub: 'wide crack',   fn: s => synthSnare(s, 180, 0.35) },
+        { id: 'rimshot',  name: 'RIM SHOT',    sub: 'sharp',        fn: s => synthRimshot(s) },
+        { id: 'brush',    name: 'BRUSH',        sub: 'soft',         fn: s => synthBrush(s) },
+        { id: 'snap',     name: 'FINGER SNAP', sub: 'close',        fn: s => synthSnap(s) },
+    ]},
+    { cat: 'Hi-Hats', sounds: [
+        { id: 'openhat',  name: 'OPEN HAT',    sub: 'sustain',      fn: s => synthHat(s, 0.4,  true) },
+        { id: 'closedhat',name: 'CLOSED HAT',  sub: 'tight',        fn: s => synthHat(s, 0.06, false) },
+        { id: 'pedal',    name: 'PEDAL HAT',   sub: 'low',          fn: s => synthHat(s, 0.08, false, 5000) },
+        { id: 'sizzle',   name: 'SIZZLE',      sub: 'metallic',     fn: s => synthSizzle(s) },
+    ]},
+    { cat: 'Cymbals', sounds: [
+        { id: 'crash',    name: 'CRASH',        sub: 'explosive',    fn: s => synthCrash(s) },
+        { id: 'ride',     name: 'RIDE',         sub: 'bell-ping',    fn: s => synthRide(s) },
+        { id: 'china',    name: 'CHINA',        sub: 'trashy',       fn: s => synthChina(s) },
+    ]},
+    { cat: 'Percussion', sounds: [
+        { id: 'tom_hi',   name: 'HI TOM',       sub: 'rack',         fn: s => synthTom(s, 220, 0.4) },
+        { id: 'tom_mid',  name: 'MID TOM',      sub: 'floor',        fn: s => synthTom(s, 140, 0.5) },
+        { id: 'tom_low',  name: 'FLOOR TOM',    sub: 'deep',         fn: s => synthTom(s, 80,  0.7) },
+        { id: 'cowbell',  name: 'COWBELL',      sub: 'more cowbell', fn: s => synthCowbell(s) },
+        { id: 'clave',    name: 'CLAVE',         sub: 'woodblock',    fn: s => synthClave(s) },
+        { id: 'conga_hi', name: 'CONGA HI',     sub: 'slap',         fn: s => synthConga(s, 300, 0.15) },
+        { id: 'conga_lo', name: 'CONGA LOW',    sub: 'open tone',    fn: s => synthConga(s, 180, 0.35) },
+        { id: 'bongo',    name: 'BONGO',         sub: 'finger hit',   fn: s => synthTom(s, 400, 0.2) },
+        { id: 'shaker',   name: 'SHAKER',        sub: 'groove',       fn: s => synthShaker(s) },
+        { id: 'tamb',     name: 'TAMBOURINE',   sub: 'jingle',       fn: s => synthTambourine(s) },
+    ]},
+    { cat: 'Electronic', sounds: [
+        { id: 'clap2',    name: 'TRAP CLAP',    sub: 'layered',      fn: s => synthTrapClap(s) },
+        { id: 'zap',      name: 'ZAP',           sub: 'synth hit',    fn: s => synthZap(s) },
+        { id: 'laser',    name: 'LASER',         sub: 'sci-fi',       fn: s => synthLaser(s) },
+        { id: 'tom_elec', name: 'E-TOM',         sub: 'electronic',   fn: s => synthElecTom(s) },
+        { id: 'glitch',   name: 'GLITCH',        sub: 'bitcrush',     fn: s => synthGlitch(s) },
+        { id: 'hihat_elec',name:'E-HAT',         sub: 'digital',      fn: s => synthElecHat(s) },
+    ]},
+    { cat: 'Bass Hits', sounds: [
+        { id: 'sub_hit',  name: 'SUB HIT',      sub: '808 sub',      fn: s => synthSubHit(s) },
+        { id: 'bass_slap',name: 'BASS SLAP',    sub: 'finger bass',  fn: s => synthBassSlap(s) },
+        { id: 'stomp',    name: 'STOMP',         sub: 'body hit',     fn: s => synthStomp(s) },
+    ]},
+];
+
+// ── Synthesis functions ──────────────────────────────
+function synthKick(s, startFreq, dur) {
+    if (!ctx) return;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.setValueAtTime(startFreq, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(0.01, ctx.currentTime + dur);
+    g.gain.setValueAtTime(1.2, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + dur);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime + dur); o.onended = () => g.disconnect();
+}
+function synthRoomKick(s) {
+    if (!ctx) return;
+    synthKick(s, 120, 0.6);
+    // Add noise transient
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.05, ctx.sampleRate);
+    const d = buf.getChannelData(0); for (let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    const ns = ctx.createBufferSource(), g2 = ctx.createGain();
+    ns.buffer = buf; g2.gain.setValueAtTime(0.3, ctx.currentTime);
+    g2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+    ns.connect(g2); g2.connect(ctx.destination); ns.start();
+    ns.onended = () => g2.disconnect();
+}
+function synthSnare(s, freq, dur) {
+    if (!ctx) return;
+    const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+    const d = buf.getChannelData(0); for (let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    const ns = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    ns.buffer = buf; f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = 0.8;
+    g.gain.setValueAtTime(1, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + dur);
+    ns.connect(f); f.connect(g); g.connect(ctx.destination); ns.start();
+    ns.onended = () => { g.disconnect(); f.disconnect(); };
+}
+function synthRimshot(s) {
+    if (!ctx) return;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'square'; o.frequency.value = 1200;
+    g.gain.setValueAtTime(0.8, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.04);
+    o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.04);
+    o.onended = () => g.disconnect();
+}
+function synthBrush(s) {
+    if (!ctx) return;
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.12, ctx.sampleRate);
+    const d = buf.getChannelData(0); for (let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    const ns = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    ns.buffer = buf; f.type = 'bandpass'; f.frequency.value = 2000; f.Q.value = 0.3;
+    g.gain.setValueAtTime(0.3, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+    ns.connect(f); f.connect(g); g.connect(ctx.destination); ns.start();
+    ns.onended = () => { g.disconnect(); f.disconnect(); };
+}
+function synthSnap(s) {
+    if (!ctx) return;
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.03, ctx.sampleRate);
+    const d = buf.getChannelData(0); for (let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    const ns = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    ns.buffer = buf; f.type = 'highpass'; f.frequency.value = 3000;
+    g.gain.setValueAtTime(0.9, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.03);
+    ns.connect(f); f.connect(g); g.connect(ctx.destination); ns.start();
+    ns.onended = () => { g.disconnect(); f.disconnect(); };
+}
+function synthHat(s, dur, open, freq=8000) {
+    if (!ctx) return;
+    const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+    const d = buf.getChannelData(0); for (let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    const ns = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    ns.buffer = buf; f.type = 'highpass'; f.frequency.value = freq;
+    g.gain.setValueAtTime(open ? 0.5 : 0.3, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + dur);
+    ns.connect(f); f.connect(g); g.connect(ctx.destination); ns.start();
+    ns.onended = () => { g.disconnect(); f.disconnect(); };
+}
+function synthSizzle(s) {
+    if (!ctx) return;
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.6, ctx.sampleRate);
+    const d = buf.getChannelData(0); for (let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    const ns = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    ns.buffer = buf; f.type = 'highpass'; f.frequency.value = 10000;
+    g.gain.setValueAtTime(0.2, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+    ns.connect(f); f.connect(g); g.connect(ctx.destination); ns.start();
+    ns.onended = () => { g.disconnect(); f.disconnect(); };
+}
+function synthCrash(s) {
+    if (!ctx) return;
+    synthSizzle(s);
+    const o = ctx.createOscillator(), g2 = ctx.createGain();
+    o.type = 'sawtooth'; o.frequency.value = 300;
+    g2.gain.setValueAtTime(0.15, ctx.currentTime); g2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.8);
+    o.connect(g2); g2.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.8);
+    o.onended = () => g2.disconnect();
+}
+function synthRide(s) {
+    if (!ctx) return;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = 800;
+    g.gain.setValueAtTime(0.4, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+    o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.5);
+    o.onended = () => g.disconnect();
+}
+function synthChina(s) {
+    if (!ctx) return;
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
+    const d = buf.getChannelData(0); for (let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    const ns = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    ns.buffer = buf; f.type = 'peaking'; f.frequency.value = 6000; f.gain.value = 8;
+    g.gain.setValueAtTime(0.6, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+    ns.connect(f); f.connect(g); g.connect(ctx.destination); ns.start();
+    ns.onended = () => { g.disconnect(); f.disconnect(); };
+}
+function synthTom(s, freq, dur) {
+    if (!ctx) return;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.setValueAtTime(freq, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(freq * 0.4, ctx.currentTime + dur);
+    g.gain.setValueAtTime(1, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + dur);
+    o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + dur);
+    o.onended = () => g.disconnect();
+}
+function synthCowbell(s) {
+    if (!ctx) return;
+    [562, 845].forEach(freq => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'square'; o.frequency.value = freq;
+        g.gain.setValueAtTime(0.3, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+        o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.6);
+        o.onended = () => g.disconnect();
+    });
+}
+function synthClave(s) {
+    if (!ctx) return;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = 2500;
+    g.gain.setValueAtTime(0.8, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.06);
+    o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.06);
+    o.onended = () => g.disconnect();
+}
+function synthConga(s, freq, dur) { synthTom(s, freq, dur); }
+function synthShaker(s) {
+    if (!ctx) return;
+    for (let i=0;i<3;i++) {
+        setTimeout(() => {
+            const buf = ctx.createBuffer(1, ctx.sampleRate * 0.04, ctx.sampleRate);
+            const d = buf.getChannelData(0); for (let j=0;j<d.length;j++) d[j]=Math.random()*2-1;
+            const ns = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+            ns.buffer = buf; f.type = 'highpass'; f.frequency.value = 6000;
+            g.gain.setValueAtTime(0.2, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.04);
+            ns.connect(f); f.connect(g); g.connect(ctx.destination); ns.start();
+            ns.onended = () => { g.disconnect(); f.disconnect(); };
+        }, i * 30);
+    }
+}
+function synthTambourine(s) {
+    if (!ctx) return;
+    for (let i=0;i<5;i++) {
+        setTimeout(() => synthHat(s, 0.05, false, 9000), i * 20);
+    }
+}
+function synthTrapClap(s) {
+    if (!ctx) return;
+    [0, 15, 30].forEach(ms => {
+        setTimeout(() => {
+            const buf = ctx.createBuffer(1, ctx.sampleRate * 0.15, ctx.sampleRate);
+            const d = buf.getChannelData(0); for (let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+            const ns = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+            ns.buffer = buf; f.type = 'highpass'; f.frequency.value = 1800;
+            g.gain.setValueAtTime(0.6, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+            ns.connect(f); f.connect(g); g.connect(ctx.destination); ns.start();
+            ns.onended = () => { g.disconnect(); f.disconnect(); };
+        }, ms);
+    });
+}
+function synthZap(s) {
+    if (!ctx) return;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(800, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.15);
+    g.gain.setValueAtTime(0.8, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+    o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.15);
+    o.onended = () => g.disconnect();
+}
+function synthLaser(s) {
+    if (!ctx) return;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(2000, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.2);
+    g.gain.setValueAtTime(0.6, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+    o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.2);
+    o.onended = () => g.disconnect();
+}
+function synthElecTom(s) {
+    if (!ctx) return;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(300, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 0.3);
+    g.gain.setValueAtTime(1, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+    o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.3);
+    o.onended = () => g.disconnect();
+}
+function synthGlitch(s) {
+    if (!ctx) return;
+    for (let i=0;i<8;i++) {
+        setTimeout(() => {
+            const o = ctx.createOscillator(), g = ctx.createGain();
+            o.type = 'square'; o.frequency.value = 100 + Math.random() * 2000;
+            g.gain.setValueAtTime(0.4, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.02);
+            o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.02);
+            o.onended = () => g.disconnect();
+        }, i * 15);
+    }
+}
+function synthElecHat(s) {
+    if (!ctx) return;
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.03, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i=0;i<d.length;i++) d[i] = (Math.random() * 2 - 1) * (1 - i/d.length);
+    const ns = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    ns.buffer = buf; f.type = 'highpass'; f.frequency.value = 12000;
+    g.gain.setValueAtTime(0.5, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.03);
+    ns.connect(f); f.connect(g); g.connect(ctx.destination); ns.start();
+    ns.onended = () => { g.disconnect(); f.disconnect(); };
+}
+function synthSubHit(s) {
+    if (!ctx) return;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(60, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 0.5);
+    g.gain.setValueAtTime(1.5, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+    o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.5);
+    o.onended = () => g.disconnect();
+}
+function synthBassSlap(s) {
+    if (!ctx) return;
+    const o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+    o.type = 'sawtooth'; o.frequency.value = 80;
+    f.type = 'lowpass'; f.frequency.value = 400;
+    g.gain.setValueAtTime(1.2, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+    o.connect(f); f.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + 0.2);
+    o.onended = () => { g.disconnect(); f.disconnect(); };
+}
+function synthStomp(s) {
+    if (!ctx) return;
+    synthKick(s, 100, 0.4);
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.08, ctx.sampleRate);
+    const d = buf.getChannelData(0); for (let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    const ns = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g2 = ctx.createGain();
+    ns.buffer = buf; f.type = 'lowpass'; f.frequency.value = 300;
+    g2.gain.setValueAtTime(0.5, ctx.currentTime); g2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+    ns.connect(f); f.connect(g2); g2.connect(ctx.destination); ns.start();
+    ns.onended = () => { g2.disconnect(); f.disconnect(); };
+}
+
+// ── Custom pad state ─────────────────────────────────
+const DEFAULT_PADS = [
+    'tom_hi', 'tom_mid', 'tom_low', 'openhat',
+    'crash',  'cowbell', 'clap2',   'sub_hit'
+];
+
+let customPads = DEFAULT_PADS.map(id => {
+    const sound = SOUND_LIBRARY.flatMap(c => c.sounds).find(s => s.id === id);
+    return { soundId: id, name: sound ? sound.name : '?', fn: sound ? sound.fn : null };
+});
+
+let soundPickerTarget = null; // index 0-7 of pad being assigned
+let soundPickerSelected = null;
+
+function getSoundById(id) {
+    return SOUND_LIBRARY.flatMap(c => c.sounds).find(s => s.id === id) || null;
+}
+
+function playCustomPad(idx, fromLoop) {
+    const pad = customPads[idx];
+    if (!pad || !pad.fn) return;
+    if (!fromLoop) loopCapture({ kind: 'drum', type: `custom_${idx}` });
+    pad.fn(null);
+    // Flash animation
+    const el1 = document.getElementById(`cpad1-${idx}`);
+    const el2 = document.getElementById(`cpad2-${idx}`);
+    [el1, el2].forEach(el => {
+        if (!el) return;
+        el.classList.add('active');
+        setTimeout(() => el.classList.remove('active'), 120);
+    });
+}
+
+function renderCustomPads() {
+    ['customPadsGrid1', 'customPadsGrid2'].forEach(gridId => {
+        const grid = document.getElementById(gridId);
+        if (!grid) return;
+        const suffix = gridId.includes('1') ? '1' : '2';
+        grid.innerHTML = '';
+        customPads.forEach((pad, idx) => {
+            const div = document.createElement('div');
+            div.className = 'pad custom-pad';
+            div.id = `cpad${suffix}-${idx}`;
+            div.setAttribute('onpointerdown', `playCustomPad(${idx})`);
+            div.innerHTML = `
+                <button class="pad-assign-btn" onpointerdown="event.stopPropagation();openSoundPicker(${idx})">⚙</button>
+                <span style="font-size:10px;font-weight:bold;text-align:center;line-height:1.2;padding:0 4px">${pad.name}</span>`;
+            grid.appendChild(div);
+        });
+    });
+}
+
+function openSoundPicker(idx) {
+    soundPickerTarget = idx;
+    soundPickerSelected = customPads[idx].soundId;
+    document.getElementById('soundPickerName').value = customPads[idx].name;
+    // Build sound list
+    const list = document.getElementById('soundList');
+    list.innerHTML = '';
+    SOUND_LIBRARY.forEach(cat => {
+        const label = document.createElement('div');
+        label.className = 'sound-cat-label';
+        label.textContent = cat.cat;
+        list.appendChild(label);
+        const grid = document.createElement('div');
+        grid.className = 'sound-grid';
+        cat.sounds.forEach(sound => {
+            const btn = document.createElement('button');
+            btn.className = 'sound-option' + (sound.id === soundPickerSelected ? ' selected' : '');
+            btn.id = `sopt-${sound.id}`;
+            btn.innerHTML = `${sound.name}<small>${sound.sub}</small>`;
+            btn.onclick = () => {
+                // Preview
+                if (isInitialized) sound.fn(null);
+                // Select
+                document.querySelectorAll('.sound-option').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                soundPickerSelected = sound.id;
+                // Auto-fill name if user hasn't customized it
+                const nameInput = document.getElementById('soundPickerName');
+                const currentName = nameInput.value.trim().toUpperCase();
+                const oldSound = getSoundById(customPads[soundPickerTarget].soundId);
+                if (!oldSound || currentName === oldSound.name || currentName === '') {
+                    nameInput.value = sound.name;
+                }
+            };
+            grid.appendChild(btn);
+        });
+        list.appendChild(grid);
+    });
+    document.getElementById('soundPickerModal').classList.add('open');
+}
+
+function closeSoundPicker(save) {
+    if (soundPickerTarget !== null && soundPickerSelected) {
+        const sound = getSoundById(soundPickerSelected);
+        if (sound) {
+            const name = document.getElementById('soundPickerName').value.trim() || sound.name;
+            customPads[soundPickerTarget] = { soundId: sound.id, name: name.toUpperCase(), fn: sound.fn };
+            renderCustomPads();
+        }
+    }
+    soundPickerTarget = null;
+    document.getElementById('soundPickerModal').classList.remove('open');
+}
+
+// ── Landscape looper mirror ──────────────────────────
+function syncLandscapeLooper() {
+    const src = document.getElementById('looperChannels');
+    const dst = document.getElementById('looperChannels2');
+    if (src && dst) dst.innerHTML = src.innerHTML;
 }
 
 // ═══════════════════════════════════════════════════
@@ -998,6 +1540,8 @@ function renderLooperUI() {
     btn.style.display = lastHasBuffer ? '' : 'none';
     btn.id = 'addChBtn';
     container.appendChild(btn);
+    // Mirror to landscape looper panel
+    syncLandscapeLooper();
 }
 
 function loopCapture(event) {
@@ -2436,6 +2980,8 @@ looper[1] = makeLooperChannel(1);
 looper[2] = makeLooperChannel(2);
 nextCh = 3;
 renderLooperUI();
+// Render custom pads
+renderCustomPads();
 document.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('selectstart', e=>e.preventDefault());
 document.querySelectorAll('input[type=range]').forEach(s=>{
