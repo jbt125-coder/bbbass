@@ -528,10 +528,6 @@
 </div>
 
 <div class="bottom-section">
-    <div class="bass-slider-box">
-        <label style="font-size:10px">BASS</label>
-        <input type="range" class="vert" id="bass_vol" min="0" max="1" step="0.1" value="0.5">
-    </div>
     <div class="oto-side-btns">
         <button class="oto-side-btn oct-btn" id="otoOctBtn"
             ontouchstart="otoOctStart(event)" ontouchend="otoOctEnd(event)"
@@ -551,6 +547,10 @@
             onmousedown="otoWahStart(event)" onmouseup="otoWahStop(event)">
             <span>〰️</span>WAH
         </button>
+    </div>
+    <div class="bass-slider-box">
+        <label style="font-size:10px">BASS</label>
+        <input type="range" class="vert" id="bass_vol" min="0" max="1" step="0.1" value="0.5">
     </div>
     <div class="otomatone-wrap">
         <div class="joystick-container" id="joy_container">
