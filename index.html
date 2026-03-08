@@ -1696,6 +1696,12 @@ document.addEventListener('touchstart', e => {
     if (now - lastTap < 350) e.preventDefault();
     lastTap = now;
 }, { passive: false });
+
+// First touch anywhere boots the system
+document.addEventListener('touchstart', function bootOnTouch() {
+    initAudio();
+    document.removeEventListener('touchstart', bootOnTouch);
+}, { passive: true, once: true });
 document.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('selectstart', e=>e.preventDefault());
 document.querySelectorAll('input[type=range]').forEach(s=>{
